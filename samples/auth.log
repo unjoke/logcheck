@@ -1,0 +1,7 @@
+Jun  2 10:01:05 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51234 ssh2
+Jun  2 10:01:15 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51235 ssh2
+Jun  2 10:01:25 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51236 ssh2
+Jun  2 10:01:35 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51237 ssh2
+Jun  2 10:01:45 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51238 ssh2
+Jun  2 10:03:01 ubuntu sudo: pam_unix(sudo:auth): authentication failure; user=root
+this is a malformed line kept for robustness

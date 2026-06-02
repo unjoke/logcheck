@@ -1,0 +1,17 @@
+{
+  "change": "build-log-intrusion-detector",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3e73258346cdd6c9b3511d059c32f16ec4b1cedf61eb4363c0ef2bf63957cdbf",
+  "files": [
+    { "path": "openspec/changes/build-log-intrusion-detector/proposal.md", "sha256": "5e2b5f49e57f0e8f33857517dbbb91bfcb1ff4f3c4e556a90ddbfd59fe2046c7" },
+    { "path": "openspec/changes/build-log-intrusion-detector/design.md", "sha256": "38ff43faf76b561abd6cad2aace581ec42a2abd050f21fb16b7fb55e0443edff" },
+    { "path": "openspec/changes/build-log-intrusion-detector/tasks.md", "sha256": "4a1b36b869e7cb77665bd0d378363de0b72948a3ccd8212ea7f58c799a5d2ce7" },
+    { "path": "openspec/changes/build-log-intrusion-detector/specs/course-deliverables/spec.md", "sha256": "e28d4bd1343af1d64a572ff75d3838fb7ee8fcdcd3aa3593c168de67efd4e199" },
+    { "path": "openspec/changes/build-log-intrusion-detector/specs/intrusion-detection-rules/spec.md", "sha256": "ce8cb61f3a3a86597c286f689ae1ed53e452ff747a934f6aba70737a511a3287" },
+    { "path": "openspec/changes/build-log-intrusion-detector/specs/log-ingestion/spec.md", "sha256": "eef6da1d1e31ce7aa0ccc0344ebeef5f7d458fee23973fa7811f104484ffedeb" },
+    { "path": "openspec/changes/build-log-intrusion-detector/specs/report-export/spec.md", "sha256": "cf6641850167140f1405bf24590e700f21e90963653e6d1731232598fd306915" }
+  ]
+}

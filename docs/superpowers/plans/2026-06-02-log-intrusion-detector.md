@@ -2,6 +2,7 @@
 change: build-log-intrusion-detector
 design-doc: docs/superpowers/specs/2026-06-02-log-intrusion-detector-design.md
 base-ref: none-not-a-git-repository
+archived-with: 2026-06-02-build-log-intrusion-detector
 ---
 
 # Log Intrusion Detector Implementation Plan
@@ -14,6 +15,7 @@ base-ref: none-not-a-git-repository
 
 **Tech Stack:** Python 3.11+, standard library (`argparse`, `csv`, `json`, `dataclasses`, `datetime`, `pathlib`, `re`, `tomllib`, `unittest`), no network calls.
 
+archived-with: 2026-06-02-build-log-intrusion-detector
 ---
 
 ## File Structure

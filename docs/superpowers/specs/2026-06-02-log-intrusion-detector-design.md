@@ -2,6 +2,8 @@
 comet_change: build-log-intrusion-detector
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-02-build-log-intrusion-detector
+status: final
 ---
 
 # Log Intrusion Detector Technical Design

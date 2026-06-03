@@ -3,6 +3,7 @@ name = "logcheck"
 version = "0.1.0"
 description = "Offline log intrusion behavior detector for course design"
 requires-python = ">=3.11"
+dependencies = ["PyQt6>=6.11"]
 
 [project.scripts]
 logcheck = "logcheck.cli:main"

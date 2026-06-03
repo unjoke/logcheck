@@ -34,7 +34,7 @@ logcheck.cli
   parses command-line args and calls logcheck.analysis
 
 logcheck.desktop
-  owns Tkinter window, local file selection, run action, result rendering, and export actions
+  owns Qt window, local file selection, run action, result rendering, and export actions
 ```
 
 The desktop UI remains a thin local shell. It calls reusable analysis functions, stores the latest `AnalysisResult` in memory, renders summary metrics and finding rows, and calls existing exporters for JSON/CSV/Markdown output.
@@ -58,7 +58,7 @@ It should expose:
 
 ### Desktop UI
 
-Create `logcheck.desktop` as a Tkinter app. The initial production version should use only the Python standard library to preserve the repository's zero-third-party-dependency shape.
+Create `logcheck.desktop` as a PyQt6/Qt app. The production version should favor Qt because the user requested a clearer, more polished Chinese desktop window than the first Tkinter implementation could comfortably provide.
 
 The window should refine `worktmp/logcheck_desktop_mockup.py`:
 
@@ -81,9 +81,9 @@ Missing files, unreadable files, and exporter errors should be shown in the UI s
 
 ## Key Decisions
 
-### Tkinter for the First Production Version
+### PyQt6/Qt for the Production Version
 
-Tkinter is selected because it is built into Python, requires no packaging changes, and is enough for a stable course-demo desktop window. A richer toolkit can be considered later, but the first implementation should optimize for reliability and easy execution.
+PyQt6 is selected because it provides sharper widgets, better layout control, richer styling, and a more professional native desktop feel. This introduces one third-party dependency, but it directly supports the requested clarity improvement and keeps the application local-only. PySide6 was considered first, but installation repeatedly timed out in this environment; PyQt6 installed successfully and still satisfies the Qt requirement.
 
 ### Reusable Analysis Helper Before UI Work
 
@@ -99,7 +99,7 @@ The front end must make local mode visible and expose only local file and local 
 
 ## Testing Strategy
 
-Tests should cover analysis reuse without testing Tkinter internals heavily:
+Tests should cover analysis reuse without testing Qt internals heavily:
 
 - `tests/test_analysis.py` verifies `analyze_logs()` returns events/findings for sample logs.
 - `tests/test_analysis.py` verifies `summarize_result()` returns stable counts and top sources.
@@ -109,10 +109,10 @@ Tests should cover analysis reuse without testing Tkinter internals heavily:
 
 ## Risks and Mitigations
 
-- Tkinter visual limits -> Use it for stable layout and course screenshots; avoid overpromising advanced widgets.
+- Qt dependency size -> Keep the dependency explicit in `pyproject.toml` and preserve the CLI so the core tool still runs independently.
 - Encoding problems in the temporary mockup -> Treat it as layout reference and write production source as UTF-8.
 - CLI regression during extraction -> Add analysis helper tests before changing CLI.
-- UI logic grows too large -> Keep data summarization in `analysis.py` and small formatting helpers; keep Tkinter event handlers thin.
+- UI logic grows too large -> Keep data summarization in `analysis.py` and small formatting helpers; keep Qt event handlers thin.
 - Safety boundary drift -> Add tests or manual checks that UI labels/actions only reference local files and local exports.
 
 ## Acceptance Notes

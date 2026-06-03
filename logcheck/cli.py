@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from collections import Counter
 from pathlib import Path
 import argparse
 import sys
 
-from .config import load_config
+from .analysis import analyze_logs, summarize_result
 from .exporters import export_csv, export_json, export_markdown
 from .models import AnalysisResult
-from .parsers import parse_files
-from .rules import detect_findings
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,21 +25,19 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _print_summary(result: AnalysisResult) -> None:
-    severities = Counter(finding.severity for finding in result.findings)
-    sources = Counter(finding.source_address or "unknown" for finding in result.findings)
+    summary = summarize_result(result)
     print("Logcheck analysis summary")
-    print(f"Events: {len(result.events)}")
-    print(f"Findings: {len(result.findings)}")
-    print(f"Severity counts: {dict(severities)}")
-    print(f"Top suspicious sources: {sources.most_common(5)}")
+    print(f"Events: {summary.total_events}")
+    print(f"Findings: {summary.total_findings}")
+    print(f"Severity counts: {summary.findings_by_severity}")
+    print(f"Top suspicious sources: {summary.top_suspicious_sources}")
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     paths = [Path(log) for log in args.logs]
     try:
-        config = load_config(args.config)
-        events = parse_files(paths)
+        result = analyze_logs(paths, args.config)
     except FileNotFoundError as exc:
         print(f"error: file not found: {exc}", file=sys.stderr)
         return 2
@@ -50,7 +45,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: could not read input: {exc}", file=sys.stderr)
         return 2
 
-    result = AnalysisResult(events=events, findings=detect_findings(events, config))
     _print_summary(result)
 
     formats = args.format or ["json", "markdown"]

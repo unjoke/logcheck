@@ -3,7 +3,8 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QScrollArea
 
 from logcheck import desktop
 from logcheck.models import Finding
@@ -44,6 +45,50 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(window.windowTitle(), desktop.UI_TEXT["window_title"])
         self.assertGreaterEqual(window.minimumWidth(), 980)
         self.assertGreaterEqual(window.minimumHeight(), 620)
+
+        window.close()
+
+    def test_sidebar_navigation_buttons_are_clickable(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        window.nav_buttons["nav_sources"].click()
+        app.processEvents()
+
+        self.assertEqual(window.current_section, desktop.UI_TEXT["nav_sources"])
+        self.assertIn(desktop.UI_TEXT["nav_sources"], window.status_label.text())
+        self.assertEqual(window.nav_buttons["nav_sources"].objectName(), "primary")
+        self.assertEqual(window.nav_buttons["nav_overview"].objectName(), "")
+
+        window.close()
+
+    def test_finding_detail_area_is_scrollable_for_long_evidence(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        window.show()
+        finding = Finding(
+            rule_id="keyword.long_evidence",
+            severity="high",
+            explanation="\u591a\u884c\u8bc1\u636e\u9700\u8981\u5b8c\u6574\u9605\u8bfb",
+            evidence=[f"\u7b2c {index} \u884c\u8bc1\u636e\uff1aFailed password from 192.0.2.{index}" for index in range(1, 31)],
+            source_file="samples/auth.log",
+            line_number=12,
+            source_address="192.0.2.9",
+            actor="root",
+        )
+
+        window._show_finding_detail(finding)
+        app.processEvents()
+
+        self.assertIsInstance(window.detail_scroll, QScrollArea)
+        self.assertTrue(window.detail_scroll.widgetResizable())
+        self.assertIn("\u7b2c 30 \u884c\u8bc1\u636e", window.detail_label.text())
+        self.assertTrue(window.detail_label.wordWrap())
+        self.assertTrue(
+            window.detail_label.textInteractionFlags()
+            & Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self.assertGreater(window.detail_scroll.verticalScrollBar().maximum(), 0)
 
         window.close()
 

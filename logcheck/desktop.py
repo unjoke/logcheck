@@ -117,6 +117,8 @@ class LogcheckDesktop(QMainWindow):
         self.selected_paths: list[Path] = []
         self.latest_result: AnalysisResult | None = None
         self.metric_labels: dict[str, QLabel] = {}
+        self.nav_buttons: dict[str, QPushButton] = {}
+        self.current_section = UI_TEXT["nav_overview"]
 
         self.setWindowTitle(UI_TEXT["window_title"])
         self.resize(1180, 720)
@@ -199,6 +201,8 @@ class LogcheckDesktop(QMainWindow):
             button = QPushButton(UI_TEXT[key])
             button.setObjectName("primary" if index == 0 else "")
             button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(lambda _checked=False, item=key: self._select_nav(item))
+            self.nav_buttons[key] = button
             layout.addWidget(button)
         layout.addStretch(1)
         layout.addWidget(self._label(UI_TEXT["recent"], "bold", MUTED, bold=True))
@@ -292,7 +296,17 @@ class LogcheckDesktop(QMainWindow):
             layout.addWidget(self._label(f"- {UI_TEXT[key]}", "normal"))
         layout.addWidget(self._label(UI_TEXT["finding_detail"], "bold", bold=True))
         self.detail_label = self._label(UI_TEXT["detail_empty"], "small", MUTED)
-        layout.addWidget(self.detail_label)
+        self.detail_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        detail_widget = QWidget()
+        detail_layout = QVBoxLayout(detail_widget)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        detail_layout.addWidget(self.detail_label)
+        detail_layout.addStretch(1)
+        self.detail_scroll = QScrollArea()
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setMinimumHeight(150)
+        self.detail_scroll.setWidget(detail_widget)
+        layout.addWidget(self.detail_scroll, 1)
         layout.addStretch(1)
         export_button = QPushButton(UI_TEXT["export"])
         export_button.clicked.connect(self.export_reports)
@@ -300,6 +314,14 @@ class LogcheckDesktop(QMainWindow):
         self.status_label = self._label(UI_TEXT["status_start"], "small", MUTED)
         layout.addWidget(self.status_label)
         return panel
+
+    def _select_nav(self, key: str) -> None:
+        self.current_section = UI_TEXT[key]
+        for nav_key, button in self.nav_buttons.items():
+            button.setObjectName("primary" if nav_key == key else "")
+            button.style().unpolish(button)
+            button.style().polish(button)
+        self.status_label.setText(f"\u5df2\u5207\u6362\u5230\uff1a{self.current_section}")
 
     def choose_logs(self) -> None:
         paths, _selected_filter = QFileDialog.getOpenFileNames(self, "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6")
@@ -369,7 +391,7 @@ class LogcheckDesktop(QMainWindow):
         self.finding_rows.addStretch(1)
 
     def _show_finding_detail(self, finding: Finding) -> None:
-        evidence = "\n".join(finding.evidence[:4])
+        evidence = "\n".join(finding.evidence)
         self.detail_label.setText(
             f"{finding.rule_id}\n"
             f"\u4e25\u91cd\u7b49\u7ea7\uff1a{finding.severity}\n"

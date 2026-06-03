@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 
 [project.scripts]
 logcheck = "logcheck.cli:main"
+logcheck-desktop = "logcheck.desktop:main"
 
 [tool.setuptools]
 packages = ["logcheck"]

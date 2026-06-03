@@ -184,6 +184,9 @@ class LogcheckDesktop(tk.Tk):
         self._label(details, "Finding Detail", bg=PANEL, font_obj=self.ui_bold, padx=18, pady=(22, 8))
         self._label(details, textvariable=self.detail_var, fg=MUTED, bg=PANEL, font_obj=self.ui_small, padx=18, pady=6)
         tk.Frame(details, bg=PANEL).pack(fill="both", expand=True)
+        export_button = self._button_label(details, "Export JSON / CSV / Markdown", False)
+        export_button.bind("<Button-1>", lambda _event: self.export_reports())
+        export_button.pack(fill="x", padx=16, pady=(8, 10))
         self._label(details, textvariable=self.status_var, fg=MUTED, bg=PANEL, font_obj=self.ui_small, padx=18, pady=(8, 18))
 
     def choose_logs(self):
@@ -251,6 +254,24 @@ class LogcheckDesktop(tk.Tk):
             f"Source: {finding.source_file}:{finding.line_number}\n\n"
             f"{evidence}"
         )
+
+    def export_reports(self):
+        if self.latest_result is None:
+            self.status_var.set("Run analysis before exporting reports.")
+            return
+        selected = filedialog.askdirectory(title="Select local report output directory")
+        if not selected:
+            self.status_var.set("Export cancelled.")
+            return
+        out_dir = Path(selected)
+        try:
+            export_json(self.latest_result, out_dir / "analysis.json")
+            export_csv(self.latest_result, out_dir / "analysis.csv")
+            export_markdown(self.latest_result, out_dir / "analysis.md")
+        except OSError as exc:
+            self.status_var.set(f"Could not export reports: {exc}")
+            return
+        self.status_var.set(f"Reports exported to {out_dir}")
 
 
 def main() -> None:

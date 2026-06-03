@@ -8,7 +8,19 @@ class DesktopTests(unittest.TestCase):
     def test_theme_defines_black_and_white_shell(self):
         self.assertEqual(desktop.BG, "#111111")
         self.assertEqual(desktop.TEXT, "#f3f3f3")
-        self.assertIn("local", desktop.LOCAL_MODE_TEXT.lower())
+        self.assertIn("本地", desktop.LOCAL_MODE_TEXT)
+
+    def test_interface_copy_is_chinese(self):
+        visible_text = " ".join(desktop.UI_TEXT.values())
+
+        for phrase in ["文件", "分析", "检测规则", "告警队列", "导出报告", "本地文件"]:
+            self.assertIn(phrase, visible_text)
+
+    def test_font_sizes_are_clear_for_demo(self):
+        self.assertGreaterEqual(desktop.FONT_SIZES["normal"], 12)
+        self.assertGreaterEqual(desktop.FONT_SIZES["small"], 10)
+        self.assertGreaterEqual(desktop.FONT_SIZES["title"], 26)
+        self.assertGreaterEqual(desktop.FONT_SIZES["metric"], 26)
 
 
 class DesktopFormattingTests(unittest.TestCase):

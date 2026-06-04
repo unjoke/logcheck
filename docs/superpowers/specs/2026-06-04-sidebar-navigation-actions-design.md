@@ -2,6 +2,8 @@
 comet_change: fix-sidebar-navigation-actions
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-04-fix-sidebar-navigation-actions
+status: final
 ---
 
 # Sidebar Navigation Actions Design

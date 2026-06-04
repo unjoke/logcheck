@@ -2,6 +2,7 @@
 change: fix-sidebar-navigation-actions
 design-doc: docs/superpowers/specs/2026-06-04-sidebar-navigation-actions-design.md
 base-ref: f753048e9343b7f41aba81318bd2012b9746991d
+archived-with: 2026-06-04-fix-sidebar-navigation-actions
 ---
 
 # Sidebar Navigation Actions Implementation Plan

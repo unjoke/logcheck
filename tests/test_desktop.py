@@ -412,6 +412,15 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_overview_export_controls_are_separate_from_detail_scroll(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        self.assertIsNot(window.export_button.parentWidget(), window.detail_scroll)
+        self.assertGreaterEqual(window.export_button.width(), 0)
+
+        window.close()
+
 
 class DesktopFormattingTests(unittest.TestCase):
     def test_format_finding_row_includes_core_fields(self):

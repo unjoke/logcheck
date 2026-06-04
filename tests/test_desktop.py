@@ -8,7 +8,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QScrollArea
+from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QPushButton, QScrollArea
 
 from logcheck import desktop
 from logcheck.models import AnalysisResult, Event, Finding
@@ -416,8 +416,11 @@ class DesktopTests(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
-        self.assertIsNot(window.export_button.parentWidget(), window.detail_scroll)
-        self.assertGreaterEqual(window.export_button.width(), 0)
+        detail_buttons = window.detail_scroll.widget().findChildren(QPushButton)
+
+        self.assertNotIn(window.export_button, detail_buttons)
+        self.assertEqual(window.export_button.text(), desktop.UI_TEXT["export"])
+        self.assertTrue(window.export_button.isEnabled())
 
         window.close()
 

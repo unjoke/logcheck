@@ -32,6 +32,8 @@ def load_config(path: Path | None) -> DetectionConfig:
         data = json.loads(text)
     elif path.suffix == ".toml":
         data = tomllib.loads(text)
+    elif path.suffix in {".yaml", ".yml"}:
+        data = _load_yaml(text)
     else:
         raise ValueError(f"Unsupported config file type: {path.suffix}")
 
@@ -64,6 +66,16 @@ def _validate_keywords(keywords: object) -> None:
             raise ValueError("keyword rule IDs must be strings")
         if not isinstance(terms, list) or not all(isinstance(term, str) for term in terms):
             raise ValueError("keyword rules must be lists of strings")
+
+
+def _load_yaml(text: str) -> object:
+    try:
+        import yaml
+    except ImportError as exc:
+        raise ValueError("YAML requires optional parser; JSON is supported") from exc
+
+    data = yaml.safe_load(text)
+    return {} if data is None else data
 
 
 def _validate_brute_force(brute_force: object) -> None:

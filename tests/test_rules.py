@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import unittest
 from pathlib import Path
@@ -88,6 +89,36 @@ class RuleTests(unittest.TestCase):
                 "brute_force": {"threshold": 3, "window_minutes": 7},
             },
         )
+
+    def test_config_to_dict_can_be_reloaded_from_json(self):
+        original = DetectionConfig(
+            keywords={"custom_rule": ["needle", "signal"]},
+            brute_force_threshold=4,
+            brute_force_window_minutes=12,
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps(config_to_dict(original)), encoding="utf-8")
+
+            reloaded = load_config(path)
+
+        self.assertEqual(reloaded, original)
+
+    def test_yaml_rule_file_is_loaded_when_yaml_is_available(self):
+        if importlib.util.find_spec("yaml") is None:
+            self.skipTest("PyYAML is not installed")
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.yaml"
+            path.write_text(
+                "keywords:\n  custom_rule:\n    - needle\nbrute_force:\n  threshold: 2\n  window_minutes: 6\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(path)
+
+        self.assertEqual(config.keywords, {"custom_rule": ["needle"]})
+        self.assertEqual(config.brute_force_threshold, 2)
+        self.assertEqual(config.brute_force_window_minutes, 6)
 
     def test_rule_config_rejects_invalid_keyword_shape(self):
         with TemporaryDirectory() as tmp:

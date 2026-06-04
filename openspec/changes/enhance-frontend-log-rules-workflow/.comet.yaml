@@ -2,7 +2,7 @@ workflow: full
 phase: build
 build_mode: subagent-driven-development
 isolation: branch
-build_command: python -m unittest discover -v
+build_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m unittest discover -v
 verify_mode: null
 base_ref: 6d4407c5cb341c29b6e13053b99311c46e4a5743
 design_doc: docs/superpowers/specs/2026-06-04-enhance-frontend-log-rules-workflow-design.md

@@ -2,6 +2,8 @@
 comet_change: design-logcheck-desktop-frontend
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-04-design-logcheck-desktop-frontend
+status: final
 ---
 
 # Logcheck Desktop Frontend Technical Design

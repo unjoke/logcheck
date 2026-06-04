@@ -2,6 +2,7 @@
 change: design-logcheck-desktop-frontend
 design-doc: docs/superpowers/specs/2026-06-03-logcheck-desktop-frontend-design.md
 base-ref: ba51ebe18f0cf9342e6adfc739131757b8d2ee34
+archived-with: 2026-06-04-design-logcheck-desktop-frontend
 ---
 
 # Logcheck Desktop Frontend Implementation Plan
@@ -14,6 +15,7 @@ base-ref: ba51ebe18f0cf9342e6adfc739131757b8d2ee34
 
 **Tech Stack:** Python 3.11+, standard library `tkinter`, existing Logcheck modules, `unittest`.
 
+archived-with: 2026-06-04-design-logcheck-desktop-frontend
 ---
 
 ## File Structure

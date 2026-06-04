@@ -97,6 +97,30 @@ class RuleTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_config(path)
 
+    def test_rule_config_rejects_invalid_brute_force_shape(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps({"brute_force": "bad"}), encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
+
+    def test_rule_config_rejects_non_integer_brute_force_values(self):
+        cases = [
+            {"threshold": True},
+            {"threshold": 3.5},
+            {"window_minutes": False},
+            {"window_minutes": 7.5},
+        ]
+        for brute_force in cases:
+            with self.subTest(brute_force=brute_force):
+                with TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "rules.json"
+                    path.write_text(json.dumps({"brute_force": brute_force}), encoding="utf-8")
+
+                    with self.assertRaises(ValueError):
+                        load_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()

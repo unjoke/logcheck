@@ -42,10 +42,16 @@ def load_config(path: Path | None) -> DetectionConfig:
     keywords = data.get("keywords", base.keywords)
     _validate_keywords(keywords)
     brute_force = data.get("brute_force", {})
+    _validate_brute_force(brute_force)
     return DetectionConfig(
         keywords=keywords,
-        brute_force_threshold=int(brute_force.get("threshold", base.brute_force_threshold)),
-        brute_force_window_minutes=int(brute_force.get("window_minutes", base.brute_force_window_minutes)),
+        brute_force_threshold=_parse_int(
+            brute_force.get("threshold", base.brute_force_threshold), "brute_force.threshold"
+        ),
+        brute_force_window_minutes=_parse_int(
+            brute_force.get("window_minutes", base.brute_force_window_minutes),
+            "brute_force.window_minutes",
+        ),
     )
 
 
@@ -58,6 +64,17 @@ def _validate_keywords(keywords: object) -> None:
             raise ValueError("keyword rule IDs must be strings")
         if not isinstance(terms, list) or not all(isinstance(term, str) for term in terms):
             raise ValueError("keyword rules must be lists of strings")
+
+
+def _validate_brute_force(brute_force: object) -> None:
+    if not isinstance(brute_force, dict):
+        raise ValueError("brute_force must be an object")
+
+
+def _parse_int(value: object, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
 
 
 def config_to_dict(config: DetectionConfig) -> dict[str, object]:

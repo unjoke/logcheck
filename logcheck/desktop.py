@@ -347,8 +347,12 @@ class LogcheckDesktop(QMainWindow):
         folder_button.clicked.connect(self.choose_source_folder)
         standalone_button = QPushButton("\u9009\u62e9\u5355\u72ec\u65e5\u5fd7\u6587\u4ef6")
         standalone_button.clicked.connect(self.choose_logs)
+        analyze_selected_button = QPushButton("\u5206\u6790\u9009\u4e2d\u65e5\u5fd7")
+        analyze_selected_button.setObjectName("primary")
+        analyze_selected_button.clicked.connect(self.run_analysis)
         actions.addWidget(folder_button)
         actions.addWidget(standalone_button)
+        actions.addWidget(analyze_selected_button)
         actions.addStretch(1)
         layout.addLayout(actions)
 
@@ -651,13 +655,14 @@ class LogcheckDesktop(QMainWindow):
             return list(self.selected_source_paths)
         if self.standalone_paths:
             return list(self.standalone_paths)
-        if self.source_files:
-            return list(self.source_files)
         return list(self.selected_paths)
 
     def run_analysis(self) -> None:
         paths = self._resolve_analysis_paths()
         if not paths:
+            if self.source_files and not self.selected_source_paths and not self.standalone_paths and not self.selected_paths:
+                self.status_label.setText("\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u65e5\u5fd7\u6e90\u6587\u4ef6\u518d\u5f00\u59cb\u5206\u6790\u3002")
+                return
             self.status_label.setText("\u8bf7\u5148\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
             return
         try:

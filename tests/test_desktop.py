@@ -130,6 +130,38 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_source_based_analysis_requires_selected_source_files(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        window.source_files = [Path("auth.log"), Path("app.log")]
+        window.selected_source_paths = []
+        window.standalone_paths = []
+        window.selected_paths = []
+
+        with patch("logcheck.desktop.analyze_logs") as analyze_logs:
+            window.run_analysis()
+
+        analyze_logs.assert_not_called()
+        self.assertIn("\u81f3\u5c11", window.status_label.text())
+        window.close()
+
+    def test_overview_source_summary_updates_from_log_sources(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "auth.log"
+            second = root / "app.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+            window.set_log_source_folder(root)
+
+            window.source_file_checks[first].setChecked(False)
+
+        self.assertIn("app.log", window.logs_label.text())
+        self.assertNotIn("auth.log", window.logs_label.text())
+        window.close()
+
     def test_course_demo_navigation_is_removed(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()

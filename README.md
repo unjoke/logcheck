@@ -1,28 +1,54 @@
 # Logcheck
 
-Logcheck 是一个基于日志分析的入侵行为检测工具，课程设计题目为“基于日志分析的入侵行为检测工具设计与实现”。工具使用 Python 实现，支持读取本地日志文件，解析常见 Linux 认证日志和应用日志，通过关键词规则和简单关联规则识别可疑行为，并导出分析报告。
+Logcheck 是一个面向课程设计的本地日志入侵行为检测工具。它使用 Python 实现，支持读取本地日志文件，解析常见 Linux 认证日志和应用日志，通过关键词规则与简单关联规则识别可疑行为，并导出分析报告。
+
+项目现在同时提供命令行界面和 PyQt6 桌面界面。桌面界面采用黑白窗口风格，适合课堂演示、截图和人工复核。
 
 ## 功能概览
 
-- 解析 Linux `/var/log/auth.log` 风格日志和通用应用日志
-- 检测 failed login、invalid user、unauthorized access、permission denied、sudo failure 等关键词
-- 检测同一来源多次失败登录的暴力破解行为
-- 输出终端摘要，包括事件数、告警数、严重等级统计和可疑来源
-- 导出 JSON、CSV、Markdown 三种分析结果
-- 提供样例日志和自动化测试，方便课程演示、录屏和报告撰写
+- 解析 Linux `/var/log/auth.log` 风格日志和通用应用日志。
+- 检测 `failed login`、`invalid user`、`unauthorized access`、`permission denied`、`sudo failure` 等可疑关键词。
+- 检测同一来源多次失败登录的暴力破解迹象。
+- 输出事件数量、告警数量、严重等级统计和可疑来源摘要。
+- 导出 JSON、CSV、Markdown 三种分析结果。
+- 提供 PyQt6 桌面窗口，可选择本地日志、运行分析、查看告警详情并导出报告。
+- 保持本地分析边界，不提供域名扫描、远程上传、阻断或攻击功能。
 
 ## 环境要求
 
 - Python 3.11 或更高版本
-- 不需要额外第三方依赖
+- PyQt6 6.11 或更高版本
 
-在项目根目录运行命令：
+安装依赖：
 
 ```bash
-cd E:\学校文件\大三下\信息安全基础\Logcheck
+python -m pip install -e .
 ```
 
-## 快速运行
+## 桌面版运行
+
+启动 Qt 桌面窗口：
+
+```bash
+python -m logcheck.desktop
+```
+
+也可以在安装项目后使用脚本入口：
+
+```bash
+logcheck-desktop
+```
+
+桌面版支持：
+
+- 选择一个或多个本地日志文件
+- 点击“开始分析”运行现有检测流程
+- 查看事件、告警、高危项、可疑来源等摘要指标
+- 点击告警行查看完整证据详情
+- 在右侧详情区域滚动查看长证据文本
+- 导出 `analysis.json`、`analysis.csv`、`analysis.md`
+
+## 命令行运行
 
 使用内置样例日志运行检测：
 
@@ -30,7 +56,7 @@ cd E:\学校文件\大三下\信息安全基础\Logcheck
 python -m logcheck.cli samples/auth.log samples/app.log --out-dir outputs --format json --format csv --format markdown
 ```
 
-运行后终端会输出类似摘要：
+终端会输出类似摘要：
 
 ```text
 Logcheck analysis summary
@@ -42,29 +68,23 @@ Top suspicious sources: [('192.0.2.10', 11), ('unknown', 2), ('198.51.100.7', 2)
 
 导出文件位于 `outputs/`：
 
-- `outputs/analysis.json`：完整结构化分析结果
-- `outputs/analysis.csv`：表格形式告警结果
-- `outputs/analysis.md`：适合截图和写入课程报告的 Markdown 报告
+- `analysis.json`：完整结构化分析结果
+- `analysis.csv`：表格形式告警结果
+- `analysis.md`：适合课程报告引用的 Markdown 报告
 
-## 分析自己的日志
-
-可以把自己的日志文件路径作为参数传入：
+分析自己的日志：
 
 ```bash
 python -m logcheck.cli C:\path\to\auth.log --out-dir outputs --format markdown
 ```
 
-也可以同时分析多个日志文件：
+同时分析多个日志：
 
 ```bash
 python -m logcheck.cli logs\auth.log logs\app.log --out-dir outputs --format json --format csv
 ```
 
-如果不指定 `--format`，默认导出 JSON 和 Markdown：
-
-```bash
-python -m logcheck.cli samples/auth.log samples/app.log
-```
+如果不指定 `--format`，默认导出 JSON 和 Markdown。
 
 ## 命令参数
 
@@ -81,7 +101,9 @@ logs                  本地日志文件路径，可传入一个或多个
 python -m logcheck.cli --help
 ```
 
-## 运行测试
+## 测试
+
+运行完整测试：
 
 ```bash
 python -m unittest discover -s tests -v
@@ -93,41 +115,35 @@ python -m unittest discover -s tests -v
 - 未知或畸形日志行保留
 - 关键词检测
 - 暴力破解阈值检测
-- JSON/CSV/Markdown 导出
+- JSON、CSV、Markdown 导出
 - CLI 端到端运行
+- 桌面界面中文文案、Qt 窗口创建、告警行格式化
+- 左侧导航按钮点击状态
+- 右侧告警详情长文本滚动
 
 ## 项目结构
 
 ```text
 Logcheck/
   logcheck/
-    cli.py          命令行入口
-    parsers.py      日志解析与规范化
-    rules.py        检测规则与严重等级
-    exporters.py    JSON/CSV/Markdown 导出
-    models.py       Event、Finding 等数据结构
-    config.py       默认规则与配置加载
+    analysis.py    本地分析流程与摘要统计
+    cli.py         命令行入口
+    desktop.py     PyQt6 桌面界面入口
+    parsers.py     日志解析与规范化
+    rules.py       检测规则与严重等级
+    exporters.py   JSON/CSV/Markdown 导出
+    models.py      Event、Finding 等数据结构
+    config.py      默认规则与配置加载
   samples/
-    auth.log        Linux 认证日志样例
-    app.log         应用日志样例
-  tests/            自动化测试
-  docs/             课程报告 notes、设计文档、验证报告
-  openspec/         OpenSpec/Comet 规格与归档记录
+    auth.log       Linux 认证日志样例
+    app.log        应用日志样例
+  tests/           自动化测试
+  docs/            设计文档、计划和验证报告
+  openspec/        OpenSpec/Comet 规格与变更记录
 ```
 
-## 课程报告写作提示
+## 安全边界
 
-报告中可以按以下思路组织：
+Logcheck 只分析本地日志文件，并只向本地目录导出报告。项目不提供网络扫描、远程上传、域名访问、漏洞利用、阻断封禁等功能。
 
-- 绪论：说明日志审计、入侵检测和账号安全的背景意义
-- 理论基础：介绍系统日志格式、关键词匹配、阈值关联分析、严重等级划分
-- 总体设计：展示 CLI -> Parser -> Event -> Rule Engine -> Finding -> Exporter 数据流
-- 详细设计：说明 `Event`、`Finding` 数据结构，以及解析规则和检测规则
-- 测试结果：使用 `samples/auth.log` 和 `samples/app.log` 展示检测结果和导出文件
-- 总结展望：说明误报、日志格式覆盖有限，并展望 ELK 仪表盘、实时监控等扩展
-
-## 注意事项
-
-- 本工具只分析本地日志文件，不进行网络扫描、攻击、阻断或远程上报。
-- 关键词规则可能产生误报，报告中应结合 evidence 字段解释判断依据。
-- `outputs/` 是运行生成目录，已加入 `.gitignore`，可按需删除后重新生成。
+检测规则可能产生误报。课程报告中建议结合 `evidence` 字段、源文件和行号解释判断依据。

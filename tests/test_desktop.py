@@ -151,10 +151,25 @@ class DesktopTests(unittest.TestCase):
         with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
             window.run_analysis()
 
-        analyze_logs.assert_called_once_with(paths)
+        analyze_logs.assert_called_once_with(paths, None)
         self.assertEqual(window.latest_result, result)
         self.assertEqual(window.analysis_history[-1].paths, paths)
 
+        window.close()
+
+    def test_run_analysis_passes_imported_rule_file(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(events=[Event("selected.log", 1, "needle")], findings=[])
+        paths = [Path("selected.log")]
+        rule_path = Path("rules.json")
+        window.selected_source_paths = paths
+        window.active_rule_path = rule_path
+
+        with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
+            window.run_analysis()
+
+        analyze_logs.assert_called_once_with(paths, rule_path)
         window.close()
 
     def test_standalone_local_files_can_be_analyzed_without_source_folder(self):
@@ -168,7 +183,7 @@ class DesktopTests(unittest.TestCase):
         with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
             window.run_analysis()
 
-        analyze_logs.assert_called_once_with(standalone)
+        analyze_logs.assert_called_once_with(standalone, None)
         self.assertEqual(window.standalone_paths, standalone)
         self.assertEqual(window.analysis_history[-1].paths, standalone)
 

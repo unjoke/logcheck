@@ -661,7 +661,7 @@ class LogcheckDesktop(QMainWindow):
             self.status_label.setText("\u8bf7\u5148\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
             return
         try:
-            self.latest_result = analyze_logs(paths)
+            self.latest_result = analyze_logs(paths, self.active_rule_path)
         except OSError as exc:
             self.status_label.setText(f"\u65e0\u6cd5\u5206\u6790\u65e5\u5fd7\uff1a{exc}")
             return

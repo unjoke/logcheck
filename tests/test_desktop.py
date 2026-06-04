@@ -145,6 +145,23 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("\u81f3\u5c11", window.status_label.text())
         window.close()
 
+    def test_empty_source_folder_does_not_analyze_stale_standalone_paths(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with patch.object(window, "choose_standalone_logs", return_value=[Path("old.log")]):
+            window.choose_logs()
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            window.set_log_source_folder(root)
+
+            with patch("logcheck.desktop.analyze_logs") as analyze_logs:
+                window.run_analysis()
+
+        analyze_logs.assert_not_called()
+        self.assertIn("\u672c\u5730\u65e5\u5fd7", window.status_label.text())
+        window.close()
+
     def test_overview_source_summary_updates_from_log_sources(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()

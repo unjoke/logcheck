@@ -611,6 +611,7 @@ class LogcheckDesktop(QMainWindow):
         self.source_files = self.discover_source_files(folder)
         self.selected_source_paths = list(self.source_files)
         self.standalone_paths = []
+        self.selected_paths = list(self.selected_source_paths)
         if not self.source_files:
             text = f"{folder}\n\u672a\u53d1\u73b0\u53ef\u7528\u65e5\u5fd7\u6587\u4ef6\u3002"
         else:

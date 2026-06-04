@@ -1,21 +1,4 @@
-## Purpose
-The intrusion detection rules capability detects keyword and repeated-behavior indicators from parsed local log events, classifies finding severity, and supports local configurable rule files.
-
-## Requirements
-
-### Requirement: Detect keyword indicators
-The system SHALL detect intrusion-related keywords such as failed login, unauthorized access, invalid user, authentication failure, permission denied, sudo failure, and suspicious command execution.
-
-#### Scenario: Failed login keyword match
-- **WHEN** a parsed log event contains a failed-login indicator
-- **THEN** the system emits a finding with a rule identifier, severity, matched keyword, evidence line, and explanation
-
-### Requirement: Detect repeated suspicious behavior
-The system SHALL detect repeated suspicious behavior from the same actor or source address within a configurable time window.
-
-#### Scenario: Brute force threshold exceeded
-- **WHEN** one source address produces failed-login events at or above the configured threshold within the time window
-- **THEN** the system emits a brute-force finding with the source address, count, window, severity, and supporting evidence
+## MODIFIED Requirements
 
 ### Requirement: Support configurable rules
 The system SHALL load detection rules and thresholds from a local configuration file while providing secure defaults when no configuration is supplied.
@@ -54,10 +37,3 @@ The system SHALL serialize the active detection rule configuration to a local st
 #### Scenario: Exported rules can be re-imported
 - **WHEN** the user imports a rule JSON file previously exported by the system
 - **THEN** the loaded detection configuration is equivalent to the exported active configuration
-
-### Requirement: Classify finding severity
-The system SHALL classify each finding as low, medium, high, or critical based on rule type, event count, and confidence.
-
-#### Scenario: Severity appears in result
-- **WHEN** the system emits a finding
-- **THEN** the finding includes a severity value suitable for terminal display and report export

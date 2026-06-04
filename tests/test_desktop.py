@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -7,7 +8,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QScrollArea
+from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QPushButton, QScrollArea
 
 from logcheck import desktop
 from logcheck.models import AnalysisResult, Event, Finding
@@ -129,6 +130,55 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_source_based_analysis_requires_selected_source_files(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        window.source_files = [Path("auth.log"), Path("app.log")]
+        window.selected_source_paths = []
+        window.standalone_paths = []
+        window.selected_paths = []
+
+        with patch("logcheck.desktop.analyze_logs") as analyze_logs:
+            window.run_analysis()
+
+        analyze_logs.assert_not_called()
+        self.assertIn("\u81f3\u5c11", window.status_label.text())
+        window.close()
+
+    def test_empty_source_folder_does_not_analyze_stale_standalone_paths(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with patch.object(window, "choose_standalone_logs", return_value=[Path("old.log")]):
+            window.choose_logs()
+
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            window.set_log_source_folder(root)
+
+            with patch("logcheck.desktop.analyze_logs") as analyze_logs:
+                window.run_analysis()
+
+        analyze_logs.assert_not_called()
+        self.assertIn("\u672c\u5730\u65e5\u5fd7", window.status_label.text())
+        window.close()
+
+    def test_overview_source_summary_updates_from_log_sources(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "auth.log"
+            second = root / "app.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+            window.set_log_source_folder(root)
+
+            window.source_file_checks[first].setChecked(False)
+
+        self.assertIn("app.log", window.logs_label.text())
+        self.assertNotIn("auth.log", window.logs_label.text())
+        window.close()
+
     def test_course_demo_navigation_is_removed(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
@@ -150,10 +200,25 @@ class DesktopTests(unittest.TestCase):
         with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
             window.run_analysis()
 
-        analyze_logs.assert_called_once_with(paths)
+        analyze_logs.assert_called_once_with(paths, None)
         self.assertEqual(window.latest_result, result)
         self.assertEqual(window.analysis_history[-1].paths, paths)
 
+        window.close()
+
+    def test_run_analysis_passes_imported_rule_file(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(events=[Event("selected.log", 1, "needle")], findings=[])
+        paths = [Path("selected.log")]
+        rule_path = Path("rules.json")
+        window.selected_source_paths = paths
+        window.active_rule_path = rule_path
+
+        with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
+            window.run_analysis()
+
+        analyze_logs.assert_called_once_with(paths, rule_path)
         window.close()
 
     def test_standalone_local_files_can_be_analyzed_without_source_folder(self):
@@ -167,7 +232,7 @@ class DesktopTests(unittest.TestCase):
         with patch("logcheck.desktop.analyze_logs", return_value=result) as analyze_logs:
             window.run_analysis()
 
-        analyze_logs.assert_called_once_with(standalone)
+        analyze_logs.assert_called_once_with(standalone, None)
         self.assertEqual(window.standalone_paths, standalone)
         self.assertEqual(window.analysis_history[-1].paths, standalone)
 
@@ -184,6 +249,79 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("5", text)
         self.assertIn("10", text)
 
+        window.close()
+
+    def test_rule_import_updates_active_rules_display(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "rules.json"
+            rule_path.write_text(
+                json.dumps(
+                    {
+                        "keywords": {"custom_rule": ["needle"]},
+                        "brute_force": {"threshold": 2, "window_minutes": 8},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertEqual(window.active_rule_path, rule_path)
+        self.assertIn("custom_rule", window.rules_section_label.text())
+        self.assertIn("needle", window.rules_section_label.text())
+        self.assertIn("2", window.rules_section_label.text())
+        self.assertIn("8", window.rules_section_label.text())
+        window.close()
+
+    def test_rule_import_failure_keeps_previous_rules(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        original_text = window.rules_section_label.text()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "bad.json"
+            rule_path.write_text(json.dumps({"keywords": {"bad": "needle"}}), encoding="utf-8")
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertIsNone(window.active_rule_path)
+        self.assertEqual(window.rules_section_label.text(), original_text)
+        self.assertIn("规则", window.status_label.text())
+        window.close()
+
+    def test_malformed_yaml_rule_import_failure_keeps_previous_rules(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        original_text = window.rules_section_label.text()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "bad.yaml"
+            rule_path.write_text("keywords:\n  custom_rule:\n    - [needle\n", encoding="utf-8")
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertIsNone(window.active_rule_path)
+        self.assertEqual(window.rules_section_label.text(), original_text)
+        self.assertIn("规则", window.status_label.text())
+        window.close()
+
+    def test_active_rules_can_be_saved_as_json(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            out_path = Path(tmp) / "rules.json"
+
+            with patch("logcheck.desktop.QFileDialog.getSaveFileName", return_value=(str(out_path), "")):
+                window.save_active_rule_file()
+
+            data = json.loads(out_path.read_text(encoding="utf-8"))
+
+        self.assertIn("keywords", data)
+        self.assertIn("brute_force", data)
+        self.assertIn("failed_login", data["keywords"])
         window.close()
 
     def test_export_reports_uses_selected_analysis_history_entry(self):
@@ -271,6 +409,18 @@ class DesktopTests(unittest.TestCase):
             & Qt.TextInteractionFlag.TextSelectableByMouse
         )
         self.assertGreater(window.detail_scroll.verticalScrollBar().maximum(), 0)
+
+        window.close()
+
+    def test_overview_export_controls_are_separate_from_detail_scroll(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        detail_buttons = window.detail_scroll.widget().findChildren(QPushButton)
+
+        self.assertNotIn(window.export_button, detail_buttons)
+        self.assertEqual(window.export_button.text(), desktop.UI_TEXT["export"])
+        self.assertTrue(window.export_button.isEnabled())
 
         window.close()
 

@@ -1,0 +1,15 @@
+{
+  "change": "enhance-frontend-log-rules-workflow",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "c2495d472a22718a6aeac987df1432612b723b462cab9060dea3ffdaaf3aa701",
+  "files": [
+    { "path": "openspec/changes/enhance-frontend-log-rules-workflow/proposal.md", "sha256": "a9d98f4087b8fadfcf66695c8d3f0dfc7b57603ccc3154b58e7c7b17000aae55" },
+    { "path": "openspec/changes/enhance-frontend-log-rules-workflow/design.md", "sha256": "f5557996bf1a3fe99288bead0e86e94c2a58515946275f95ea911dfd31fc70fd" },
+    { "path": "openspec/changes/enhance-frontend-log-rules-workflow/tasks.md", "sha256": "fcb737a464fd62276840afa398108b4432139f83e3d254cadf56c9c2eed2291d" },
+    { "path": "openspec/changes/enhance-frontend-log-rules-workflow/specs/desktop-frontend/spec.md", "sha256": "e2e01322d640ed6f07ed2c596fe46486e14cd3c23b950368c325435c730e9944" },
+    { "path": "openspec/changes/enhance-frontend-log-rules-workflow/specs/intrusion-detection-rules/spec.md", "sha256": "355e25ed397ae5952cde64ef6f8ed743d4ffd2d367db6d039946761f092d468e" }
+  ]
+}

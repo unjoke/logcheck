@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+The project provides reproducible course-deliverable materials, including sample data, verification coverage, packaging guidance, and report-aligned documentation.
+
+## Requirements
 
 ### Requirement: Provide reproducible sample data
 The project SHALL include sample log files that demonstrate normal behavior, keyword detections, brute-force detections, and malformed-line handling.

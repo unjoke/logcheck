@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+The report export capability presents analysis summaries and writes detailed local reports in formats suitable for review, demos, and course-report material.
+
+## Requirements
 
 ### Requirement: Display terminal summary
 The system SHALL display a concise terminal summary after analysis.

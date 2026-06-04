@@ -1,4 +1,7 @@
-## ADDED Requirements
+## Purpose
+The log ingestion capability accepts local log files and normalizes common log formats into analysis-ready event records while handling malformed input safely.
+
+## Requirements
 
 ### Requirement: Accept local log files
 The system SHALL accept one or more local log file paths as analysis input.

@@ -1,6 +1,10 @@
+import importlib.util
+import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from logcheck.config import default_config
+from logcheck.config import config_to_dict, default_config, load_config
 from logcheck.models import DetectionConfig, Event
 from logcheck.rules import detect_findings
 
@@ -59,6 +63,104 @@ class RuleTests(unittest.TestCase):
         ]
         findings = detect_findings(events, config)
         self.assertTrue(any(f.rule_id == "correlation.brute_force" for f in findings))
+
+    def test_json_rule_file_is_loaded(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "keywords": {"custom_rule": ["needle"]},
+                        "brute_force": {"threshold": 3, "window_minutes": 7},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            config = load_config(path)
+
+        self.assertEqual(config.keywords, {"custom_rule": ["needle"]})
+        self.assertEqual(config.brute_force_threshold, 3)
+        self.assertEqual(config.brute_force_window_minutes, 7)
+        self.assertEqual(
+            config_to_dict(config),
+            {
+                "keywords": {"custom_rule": ["needle"]},
+                "brute_force": {"threshold": 3, "window_minutes": 7},
+            },
+        )
+
+    def test_config_to_dict_can_be_reloaded_from_json(self):
+        original = DetectionConfig(
+            keywords={"custom_rule": ["needle", "signal"]},
+            brute_force_threshold=4,
+            brute_force_window_minutes=12,
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps(config_to_dict(original)), encoding="utf-8")
+
+            reloaded = load_config(path)
+
+        self.assertEqual(reloaded, original)
+
+    def test_yaml_rule_file_is_loaded_when_yaml_is_available(self):
+        if importlib.util.find_spec("yaml") is None:
+            self.skipTest("PyYAML is not installed")
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.yaml"
+            path.write_text(
+                "keywords:\n  custom_rule:\n    - needle\nbrute_force:\n  threshold: 2\n  window_minutes: 6\n",
+                encoding="utf-8",
+            )
+
+            config = load_config(path)
+
+        self.assertEqual(config.keywords, {"custom_rule": ["needle"]})
+        self.assertEqual(config.brute_force_threshold, 2)
+        self.assertEqual(config.brute_force_window_minutes, 6)
+
+    def test_malformed_yaml_rule_file_raises_value_error_when_yaml_is_available(self):
+        if importlib.util.find_spec("yaml") is None:
+            self.skipTest("PyYAML is not installed")
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.yaml"
+            path.write_text("keywords:\n  custom_rule:\n    - [needle\n", encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
+
+    def test_rule_config_rejects_invalid_keyword_shape(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps({"keywords": {"bad": "needle"}}), encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
+
+    def test_rule_config_rejects_invalid_brute_force_shape(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps({"brute_force": "bad"}), encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
+
+    def test_rule_config_rejects_non_integer_brute_force_values(self):
+        cases = [
+            {"threshold": True},
+            {"threshold": 3.5},
+            {"window_minutes": False},
+            {"window_minutes": 7.5},
+        ]
+        for brute_force in cases:
+            with self.subTest(brute_force=brute_force):
+                with TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "rules.json"
+                    path.write_text(json.dumps({"brute_force": brute_force}), encoding="utf-8")
+
+                    with self.assertRaises(ValueError):
+                        load_config(path)
 
 
 if __name__ == "__main__":

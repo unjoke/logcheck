@@ -1,0 +1,14 @@
+{
+  "change": "fix-sidebar-navigation-actions",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "5d23bc099c7aa836360ed999daad90a7b607848e18ffe6e3b85f3b08ace98b1d",
+  "files": [
+    { "path": "openspec/changes/fix-sidebar-navigation-actions/proposal.md", "sha256": "6db500cca0c06240dac0401c69f115005dde00e62710d69347f0fc95b9015e87" },
+    { "path": "openspec/changes/fix-sidebar-navigation-actions/design.md", "sha256": "1057d9a69f9e02956e50005d881ea377a97ac125808ab967ec9aecc379dac709" },
+    { "path": "openspec/changes/fix-sidebar-navigation-actions/tasks.md", "sha256": "8f9e49c725ae2d4589ad5a75a295ac8accbe98cf242c833c1db2c82cff197340" },
+    { "path": "openspec/changes/fix-sidebar-navigation-actions/specs/desktop-frontend/spec.md", "sha256": "a69f9972fbe903644d0962b75c240234681e1b525eb19b815c091d48eb78a26e" }
+  ]
+}

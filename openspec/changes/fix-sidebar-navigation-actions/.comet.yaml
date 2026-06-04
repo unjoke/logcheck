@@ -1,0 +1,18 @@
+workflow: full
+phase: verify
+build_mode: executing-plans
+isolation: branch
+verify_mode: full
+base_ref: f753048e9343b7f41aba81318bd2012b9746991d
+design_doc: docs/superpowers/specs/2026-06-04-sidebar-navigation-actions-design.md
+plan: docs/superpowers/plans/2026-06-04-sidebar-navigation-actions.md
+verify_result: pending
+verification_report: docs/superpowers/reports/2026-06-04-fix-sidebar-navigation-actions-verify.md
+branch_status: pending
+build_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m unittest discover -s tests -v
+verify_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m unittest discover -s tests -v
+created_at: 2026-06-04
+verified_at: null
+archived: false
+handoff_context: openspec/changes/fix-sidebar-navigation-actions/.comet/handoff/design-context.json
+handoff_hash: 5d23bc099c7aa836360ed999daad90a7b607848e18ffe6e3b85f3b08ace98b1d

@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -7,7 +8,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QScrollArea
 
 from logcheck import desktop
-from logcheck.models import Finding
+from logcheck.models import AnalysisResult, Event, Finding
 
 
 class DesktopTests(unittest.TestCase):
@@ -52,13 +53,62 @@ class DesktopTests(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
-        window.nav_buttons["nav_sources"].click()
+        window.nav_buttons["nav_rules"].click()
         app.processEvents()
 
-        self.assertEqual(window.current_section, desktop.UI_TEXT["nav_sources"])
-        self.assertIn(desktop.UI_TEXT["nav_sources"], window.status_label.text())
-        self.assertEqual(window.nav_buttons["nav_sources"].objectName(), "primary")
+        self.assertEqual(window.current_section, desktop.UI_TEXT["nav_rules"])
+        self.assertIn(desktop.UI_TEXT["nav_rules"], window.status_label.text())
+        self.assertEqual(window.nav_buttons["nav_rules"].objectName(), "primary")
         self.assertEqual(window.nav_buttons["nav_overview"].objectName(), "")
+        self.assertEqual(window.workspace_stack.currentWidget(), window.section_widgets["nav_rules"])
+
+        window.close()
+
+    def test_sidebar_action_buttons_dispatch_existing_local_functions(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        with patch.object(window, "choose_logs") as choose_logs:
+            window.nav_buttons["nav_sources"].click()
+            app.processEvents()
+
+        choose_logs.assert_called_once_with()
+        self.assertEqual(window.workspace_stack.currentWidget(), window.section_widgets["nav_sources"])
+
+        with patch.object(window, "export_reports") as export_reports:
+            window.nav_buttons["nav_export"].click()
+            app.processEvents()
+
+        export_reports.assert_called_once_with()
+        self.assertEqual(window.workspace_stack.currentWidget(), window.section_widgets["nav_export"])
+
+        window.close()
+
+    def test_sidebar_suspicious_sources_section_reflects_latest_analysis(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(
+            events=[Event(source_file="samples/auth.log", line_number=1, raw_line="login failed")],
+            findings=[
+                Finding(
+                    rule_id="keyword.failed_login",
+                    severity="medium",
+                    explanation="Matched intrusion indicator keyword",
+                    evidence=["Failed password from 192.0.2.10"],
+                    source_file="samples/auth.log",
+                    line_number=1,
+                    source_address="192.0.2.10",
+                )
+            ],
+        )
+
+        window._render_result(result)
+        window.nav_buttons["nav_suspicious"].click()
+        app.processEvents()
+
+        self.assertEqual(window.workspace_stack.currentWidget(), window.section_widgets["nav_suspicious"])
+        self.assertIn("192.0.2.10", window.suspicious_sources_label.text())
+        self.assertIn("1", window.suspicious_sources_label.text())
 
         window.close()
 

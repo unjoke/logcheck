@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -85,6 +86,14 @@ UI_TEXT = {
     "export": "\u5bfc\u51fa JSON / CSV / Markdown",
     "status_start": "\u8bf7\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u5f00\u59cb\u5206\u6790\u3002",
 }
+NAV_ITEMS = (
+    "nav_overview",
+    "nav_sources",
+    "nav_rules",
+    "nav_suspicious",
+    "nav_export",
+    "nav_demo",
+)
 
 
 @dataclass(frozen=True)
@@ -118,6 +127,7 @@ class LogcheckDesktop(QMainWindow):
         self.latest_result: AnalysisResult | None = None
         self.metric_labels: dict[str, QLabel] = {}
         self.nav_buttons: dict[str, QPushButton] = {}
+        self.section_widgets: dict[str, QWidget] = {}
         self.current_section = UI_TEXT["nav_overview"]
 
         self.setWindowTitle(UI_TEXT["window_title"])
@@ -137,10 +147,31 @@ class LogcheckDesktop(QMainWindow):
                 padding: 9px 16px;
                 font-size: {FONT_SIZES["normal"]}pt;
             }}
+            QPushButton:hover {{
+                background: #303030;
+                border-color: #666666;
+            }}
+            QPushButton:pressed {{
+                background: #f5f5f5;
+                color: #111111;
+                padding-top: 11px;
+                padding-bottom: 7px;
+            }}
+            QPushButton#sidebar {{
+                background: {PANEL_2};
+                color: {TEXT};
+                border: 1px solid {BORDER};
+                text-align: center;
+            }}
             QPushButton#primary {{
                 background: {ACCENT};
                 color: {BG};
                 font-weight: 700;
+            }}
+            QPushButton#primary:hover, QPushButton#primary:pressed {{
+                background: #ffffff;
+                color: {BG};
+                border-color: #ffffff;
             }}
             QFrame#panel, QFrame#card, QFrame#row {{
                 background: {PANEL};
@@ -195,13 +226,11 @@ class LogcheckDesktop(QMainWindow):
         layout.addWidget(self._label(UI_TEXT["sidebar_title"], "title", bold=True))
         layout.addWidget(self._label(UI_TEXT["sidebar_subtitle"], "normal", MUTED))
         layout.addSpacing(18)
-        for index, key in enumerate(
-            ["nav_overview", "nav_sources", "nav_rules", "nav_suspicious", "nav_export", "nav_demo"]
-        ):
+        for index, key in enumerate(NAV_ITEMS):
             button = QPushButton(UI_TEXT[key])
             button.setObjectName("primary" if index == 0 else "")
             button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(lambda _checked=False, item=key: self._select_nav(item))
+            button.clicked.connect(lambda _checked=False, item=key: self._activate_nav(item))
             self.nav_buttons[key] = button
             layout.addWidget(button)
         layout.addStretch(1)
@@ -212,6 +241,18 @@ class LogcheckDesktop(QMainWindow):
         return side
 
     def _main_area(self) -> QWidget:
+        self.workspace_stack = QStackedWidget()
+        self.section_widgets["nav_overview"] = self._overview_section()
+        self.section_widgets["nav_sources"] = self._sources_section()
+        self.section_widgets["nav_rules"] = self._rules_section()
+        self.section_widgets["nav_suspicious"] = self._suspicious_section()
+        self.section_widgets["nav_export"] = self._export_section()
+        self.section_widgets["nav_demo"] = self._demo_section()
+        for key in NAV_ITEMS:
+            self.workspace_stack.addWidget(self.section_widgets[key])
+        return self.workspace_stack
+
+    def _overview_section(self) -> QWidget:
         main = QWidget()
         layout = QVBoxLayout(main)
         layout.setContentsMargins(34, 34, 34, 34)
@@ -250,6 +291,76 @@ class LogcheckDesktop(QMainWindow):
         content.addWidget(self._details_panel())
         layout.addLayout(content, 1)
         return main
+
+    def _simple_section(self, title: str, subtitle: str, lines: list[str]) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(34, 34, 34, 34)
+        layout.setSpacing(14)
+        layout.addWidget(self._label(title, "title", bold=True))
+        layout.addWidget(self._label(subtitle, "normal", MUTED))
+        panel = QFrame()
+        panel.setObjectName("panel")
+        panel_box = QVBoxLayout(panel)
+        panel_box.setContentsMargins(20, 18, 20, 18)
+        panel_box.setSpacing(10)
+        for line in lines:
+            panel_box.addWidget(self._label(line, "normal", MUTED))
+        panel_box.addStretch(1)
+        layout.addWidget(panel, 1)
+        return section
+
+    def _sources_section(self) -> QWidget:
+        section = self._simple_section(
+            UI_TEXT["nav_sources"],
+            "\u7ba1\u7406\u5f85\u5206\u6790\u7684\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002",
+            ["\u5f53\u524d\u672a\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6\u3002"],
+        )
+        self.sources_section_label = section.findChildren(QLabel)[-1]
+        return section
+
+    def _rules_section(self) -> QWidget:
+        return self._simple_section(
+            UI_TEXT["nav_rules"],
+            "\u67e5\u770b\u672c\u5730\u5206\u6790\u4f7f\u7528\u7684\u68c0\u6d4b\u89c4\u5219\u72b6\u6001\u3002",
+            [
+                f"- {UI_TEXT['rule_keyword']}",
+                f"- {UI_TEXT['rule_repeated']}",
+                f"- {UI_TEXT['rule_severity']}",
+                "\u6240\u6709\u89c4\u5219\u5747\u4ec5\u7528\u4e8e\u672c\u5730\u65e5\u5fd7\u5206\u6790\u3002",
+            ],
+        )
+
+    def _suspicious_section(self) -> QWidget:
+        section = self._simple_section(
+            UI_TEXT["nav_suspicious"],
+            "\u6839\u636e\u6700\u8fd1\u4e00\u6b21\u672c\u5730\u5206\u6790\u6c47\u603b\u53ef\u7591\u8d26\u53f7\u6216\u5730\u5740\u3002",
+            ["\u5c1a\u672a\u8fd0\u884c\u5206\u6790\uff0c\u6682\u65e0\u53ef\u7591\u6765\u6e90\u3002"],
+        )
+        self.suspicious_sources_label = section.findChildren(QLabel)[-1]
+        return section
+
+    def _export_section(self) -> QWidget:
+        return self._simple_section(
+            UI_TEXT["nav_export"],
+            "\u5c06\u6700\u8fd1\u4e00\u6b21\u5206\u6790\u7ed3\u679c\u5bfc\u51fa\u5230\u672c\u5730\u76ee\u5f55\u3002",
+            [
+                "JSON\uff1a\u7ed3\u6784\u5316\u544a\u8b66\u548c\u5143\u6570\u636e\u3002",
+                "CSV\uff1a\u9002\u5408\u8868\u683c\u590d\u6838\u7684\u544a\u8b66\u884c\u3002",
+                "Markdown\uff1a\u9002\u5408\u8bfe\u7a0b\u62a5\u544a\u5f15\u7528\u7684\u6587\u672c\u8f93\u51fa\u3002",
+            ],
+        )
+
+    def _demo_section(self) -> QWidget:
+        return self._simple_section(
+            UI_TEXT["nav_demo"],
+            "\u4f7f\u7528\u9879\u76ee\u81ea\u5e26\u6837\u4f8b\u65e5\u5fd7\u8fdb\u884c\u8bfe\u7a0b\u6f14\u793a\u3002",
+            [
+                "samples/auth.log\uff1a\u5931\u8d25\u767b\u5f55\u548c\u53ef\u7591\u8d26\u53f7\u793a\u4f8b\u3002",
+                "samples/app.log\uff1a\u5e94\u7528\u8bbf\u95ee\u4e0e\u5f02\u5e38\u884c\u4e3a\u793a\u4f8b\u3002",
+                "\u6f14\u793a\u6d41\u7a0b\uff1a\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u3001\u5f00\u59cb\u5206\u6790\u3001\u67e5\u770b\u544a\u8b66\u3001\u5bfc\u51fa\u62a5\u544a\u3002",
+            ],
+        )
 
     def _metric_card(self, key: str, title: str, hint: str) -> QFrame:
         card = QFrame()
@@ -315,8 +426,16 @@ class LogcheckDesktop(QMainWindow):
         layout.addWidget(self.status_label)
         return panel
 
+    def _activate_nav(self, key: str) -> None:
+        self._select_nav(key)
+        if key == "nav_sources":
+            self.choose_logs()
+        elif key == "nav_export":
+            self.export_reports()
+
     def _select_nav(self, key: str) -> None:
         self.current_section = UI_TEXT[key]
+        self.workspace_stack.setCurrentWidget(self.section_widgets[key])
         for nav_key, button in self.nav_buttons.items():
             button.setObjectName("primary" if nav_key == key else "")
             button.style().unpolish(button)
@@ -330,6 +449,7 @@ class LogcheckDesktop(QMainWindow):
             return
         self.selected_paths = [Path(path) for path in paths]
         self.logs_label.setText("\n".join(path.name for path in self.selected_paths))
+        self.sources_section_label.setText("\n".join(str(path) for path in self.selected_paths))
         self.status_label.setText(f"\u5df2\u9009\u62e9 {len(self.selected_paths)} \u4e2a\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
 
     def run_analysis(self) -> None:
@@ -355,7 +475,14 @@ class LogcheckDesktop(QMainWindow):
         self.metric_labels["findings"].setText(str(summary.total_findings))
         self.metric_labels["high"].setText(str(high_count))
         self.metric_labels["sources"].setText(str(len(summary.top_suspicious_sources)))
+        self._refresh_suspicious_sources(summary.top_suspicious_sources)
         self._render_findings(result.findings)
+
+    def _refresh_suspicious_sources(self, sources: list[tuple[str, int]]) -> None:
+        if not sources:
+            self.suspicious_sources_label.setText("\u672a\u68c0\u6d4b\u5230\u53ef\u7591\u6765\u6e90\u3002")
+            return
+        self.suspicious_sources_label.setText("\n".join(f"{source} - {count}" for source, count in sources))
 
     def _clear_findings(self) -> None:
         while self.finding_rows.count():

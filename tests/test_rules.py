@@ -1,6 +1,9 @@
+import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from logcheck.config import default_config
+from logcheck.config import config_to_dict, default_config, load_config
 from logcheck.models import DetectionConfig, Event
 from logcheck.rules import detect_findings
 
@@ -59,6 +62,40 @@ class RuleTests(unittest.TestCase):
         ]
         findings = detect_findings(events, config)
         self.assertTrue(any(f.rule_id == "correlation.brute_force" for f in findings))
+
+    def test_json_rule_file_is_loaded(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "keywords": {"custom_rule": ["needle"]},
+                        "brute_force": {"threshold": 3, "window_minutes": 7},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            config = load_config(path)
+
+        self.assertEqual(config.keywords, {"custom_rule": ["needle"]})
+        self.assertEqual(config.brute_force_threshold, 3)
+        self.assertEqual(config.brute_force_window_minutes, 7)
+        self.assertEqual(
+            config_to_dict(config),
+            {
+                "keywords": {"custom_rule": ["needle"]},
+                "brute_force": {"threshold": 3, "window_minutes": 7},
+            },
+        )
+
+    def test_rule_config_rejects_invalid_keyword_shape(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps({"keywords": {"bad": "needle"}}), encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
 
 
 if __name__ == "__main__":

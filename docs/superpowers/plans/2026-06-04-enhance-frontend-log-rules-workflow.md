@@ -2,6 +2,7 @@
 change: enhance-frontend-log-rules-workflow
 design-doc: docs/superpowers/specs/2026-06-04-enhance-frontend-log-rules-workflow-design.md
 base-ref: 6d4407c5cb341c29b6e13053b99311c46e4a5743
+archived-with: 2026-06-04-enhance-frontend-log-rules-workflow
 ---
 
 # Enhance Frontend Log Rules Workflow Implementation Plan
@@ -14,6 +15,7 @@ base-ref: 6d4407c5cb341c29b6e13053b99311c46e4a5743
 
 **Tech Stack:** Python 3.11+, PyQt6, `unittest`, standard `json`/`tomllib`, optional PyYAML import for YAML files.
 
+archived-with: 2026-06-04-enhance-frontend-log-rules-workflow
 ---
 
 ## File Map
@@ -24,6 +26,7 @@ base-ref: 6d4407c5cb341c29b6e13053b99311c46e4a5743
 - Modify `tests/test_desktop.py`: add selected-source no-selection behavior, overview reuse summary, rule import/save behavior, and overview export layout checks.
 - Modify `openspec/changes/enhance-frontend-log-rules-workflow/tasks.md`: mark implementation tasks complete as they are finished.
 
+archived-with: 2026-06-04-enhance-frontend-log-rules-workflow
 ---
 
 ### Task 1: Config JSON Support and Validation

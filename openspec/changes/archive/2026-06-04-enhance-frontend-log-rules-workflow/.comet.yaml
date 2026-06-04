@@ -12,6 +12,6 @@ verification_report: docs/superpowers/reports/2026-06-04-enhance-frontend-log-ru
 branch_status: handled
 created_at: 2026-06-04
 verified_at: 2026-06-04
-archived: false
+archived: true
 handoff_context: openspec/changes/enhance-frontend-log-rules-workflow/.comet/handoff/design-context.json
 handoff_hash: c2495d472a22718a6aeac987df1432612b723b462cab9060dea3ffdaaf3aa701

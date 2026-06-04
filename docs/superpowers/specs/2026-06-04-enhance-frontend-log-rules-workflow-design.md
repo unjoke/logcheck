@@ -2,6 +2,8 @@
 comet_change: enhance-frontend-log-rules-workflow
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-04-enhance-frontend-log-rules-workflow
+status: final
 ---
 
 # Enhance Frontend Log Rules Workflow Design

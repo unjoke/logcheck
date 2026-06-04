@@ -120,6 +120,16 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(config.brute_force_threshold, 2)
         self.assertEqual(config.brute_force_window_minutes, 6)
 
+    def test_malformed_yaml_rule_file_raises_value_error_when_yaml_is_available(self):
+        if importlib.util.find_spec("yaml") is None:
+            self.skipTest("PyYAML is not installed")
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.yaml"
+            path.write_text("keywords:\n  custom_rule:\n    - [needle\n", encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                load_config(path)
+
     def test_rule_config_rejects_invalid_keyword_shape(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rules.json"

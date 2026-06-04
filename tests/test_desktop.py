@@ -228,6 +228,22 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("规则", window.status_label.text())
         window.close()
 
+    def test_malformed_yaml_rule_import_failure_keeps_previous_rules(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        original_text = window.rules_section_label.text()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "bad.yaml"
+            rule_path.write_text("keywords:\n  custom_rule:\n    - [needle\n", encoding="utf-8")
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertIsNone(window.active_rule_path)
+        self.assertEqual(window.rules_section_label.text(), original_text)
+        self.assertIn("规则", window.status_label.text())
+        window.close()
+
     def test_active_rules_can_be_saved_as_json(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()

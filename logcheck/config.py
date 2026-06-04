@@ -74,7 +74,10 @@ def _load_yaml(text: str) -> object:
     except ImportError as exc:
         raise ValueError("YAML requires optional parser; JSON is supported") from exc
 
-    data = yaml.safe_load(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError("YAML rule config could not be parsed") from exc
     return {} if data is None else data
 
 

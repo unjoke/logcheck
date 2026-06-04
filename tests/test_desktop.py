@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -184,6 +185,63 @@ class DesktopTests(unittest.TestCase):
         self.assertIn("5", text)
         self.assertIn("10", text)
 
+        window.close()
+
+    def test_rule_import_updates_active_rules_display(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "rules.json"
+            rule_path.write_text(
+                json.dumps(
+                    {
+                        "keywords": {"custom_rule": ["needle"]},
+                        "brute_force": {"threshold": 2, "window_minutes": 8},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertEqual(window.active_rule_path, rule_path)
+        self.assertIn("custom_rule", window.rules_section_label.text())
+        self.assertIn("needle", window.rules_section_label.text())
+        self.assertIn("2", window.rules_section_label.text())
+        self.assertIn("8", window.rules_section_label.text())
+        window.close()
+
+    def test_rule_import_failure_keeps_previous_rules(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        original_text = window.rules_section_label.text()
+        with TemporaryDirectory() as tmp:
+            rule_path = Path(tmp) / "bad.json"
+            rule_path.write_text(json.dumps({"keywords": {"bad": "needle"}}), encoding="utf-8")
+
+            with patch("logcheck.desktop.QFileDialog.getOpenFileName", return_value=(str(rule_path), "")):
+                window.import_rule_file()
+
+        self.assertIsNone(window.active_rule_path)
+        self.assertEqual(window.rules_section_label.text(), original_text)
+        self.assertIn("规则", window.status_label.text())
+        window.close()
+
+    def test_active_rules_can_be_saved_as_json(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            out_path = Path(tmp) / "rules.json"
+
+            with patch("logcheck.desktop.QFileDialog.getSaveFileName", return_value=(str(out_path), "")):
+                window.save_active_rule_file()
+
+            data = json.loads(out_path.read_text(encoding="utf-8"))
+
+        self.assertIn("keywords", data)
+        self.assertIn("brute_force", data)
+        self.assertIn("failed_login", data["keywords"])
         window.close()
 
     def test_export_reports_uses_selected_analysis_history_entry(self):

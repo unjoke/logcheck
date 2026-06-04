@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+import json
 from pathlib import Path
 import sys
 
@@ -26,7 +27,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .analysis import analyze_logs, summarize_result
-from .config import default_config
+from .config import config_to_dict, default_config, load_config
 from .exporters import export_csv, export_json, export_markdown
 from .models import AnalysisResult, Finding
 
@@ -144,6 +145,8 @@ class LogcheckDesktop(QMainWindow):
         self.nav_buttons: dict[str, QPushButton] = {}
         self.section_widgets: dict[str, QWidget] = {}
         self.source_file_checks: dict[Path, QCheckBox] = {}
+        self.active_rule_path: Path | None = None
+        self.active_config = default_config()
         self.current_section = UI_TEXT["nav_overview"]
 
         self.setWindowTitle(UI_TEXT["window_title"])
@@ -370,12 +373,34 @@ class LogcheckDesktop(QMainWindow):
         return section
 
     def _rules_section(self) -> QWidget:
-        section = self._simple_section(
-            UI_TEXT["nav_rules"],
-            "\u67e5\u770b\u672c\u5730\u5206\u6790\u4f7f\u7528\u7684\u68c0\u6d4b\u89c4\u5219\u72b6\u6001\u3002",
-            [self._format_rules_text()],
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(34, 34, 34, 34)
+        layout.setSpacing(14)
+        layout.addWidget(self._label(UI_TEXT["nav_rules"], "title", bold=True))
+        layout.addWidget(
+            self._label("\u67e5\u770b\u6216\u66f4\u6362\u672c\u5730\u5206\u6790\u4f7f\u7528\u7684\u68c0\u6d4b\u89c4\u5219\u3002", "normal", MUTED)
         )
-        self.rules_section_label = section.findChildren(QLabel)[-1]
+
+        actions = QHBoxLayout()
+        import_button = QPushButton("\u5bfc\u5165\u89c4\u5219\u6587\u4ef6")
+        import_button.clicked.connect(self.import_rule_file)
+        save_button = QPushButton("\u4fdd\u5b58\u5f53\u524d\u89c4\u5219")
+        save_button.clicked.connect(self.save_active_rule_file)
+        actions.addWidget(import_button)
+        actions.addWidget(save_button)
+        actions.addStretch(1)
+        layout.addLayout(actions)
+
+        panel = QFrame()
+        panel.setObjectName("panel")
+        panel_box = QVBoxLayout(panel)
+        panel_box.setContentsMargins(20, 18, 20, 18)
+        panel_box.setSpacing(10)
+        self.rules_section_label = self._label(self._format_rules_text(), "normal", MUTED)
+        panel_box.addWidget(self.rules_section_label)
+        panel_box.addStretch(1)
+        layout.addWidget(panel, 1)
         return section
 
     def _suspicious_section(self) -> QWidget:
@@ -415,8 +440,9 @@ class LogcheckDesktop(QMainWindow):
         return section
 
     def _format_rules_text(self) -> str:
-        config = default_config()
-        lines = ["\u5173\u952e\u8bcd\u89c4\u5219\uff1a"]
+        config = self.active_config
+        source = self.active_rule_path.name if self.active_rule_path else "\u9ed8\u8ba4\u89c4\u5219"
+        lines = [f"\u89c4\u5219\u6765\u6e90\uff1a{source}", "\u5173\u952e\u8bcd\u89c4\u5219\uff1a"]
         for group, keywords in sorted(config.keywords.items()):
             lines.append(f"- {group}: {', '.join(keywords)}")
         lines.append(
@@ -424,6 +450,54 @@ class LogcheckDesktop(QMainWindow):
             f"\u6b21 / {config.brute_force_window_minutes} \u5206\u949f"
         )
         return "\n".join(lines)
+
+    def _refresh_rules_section(self) -> None:
+        self.rules_section_label.setText(self._format_rules_text())
+
+    def import_rule_file(self) -> None:
+        selected, _ = QFileDialog.getOpenFileName(
+            self,
+            "\u5bfc\u5165\u68c0\u6d4b\u89c4\u5219",
+            "",
+            "\u89c4\u5219\u6587\u4ef6 (*.json *.yaml *.yml *.toml);;\u6240\u6709\u6587\u4ef6 (*)",
+        )
+        if not selected:
+            self.status_label.setText("\u5df2\u53d6\u6d88\u89c4\u5219\u5bfc\u5165\u3002")
+            return
+
+        rule_path = Path(selected)
+        try:
+            config = load_config(rule_path)
+        except (OSError, ValueError) as exc:
+            self.status_label.setText(f"\u89c4\u5219\u5bfc\u5165\u5931\u8d25\uff1a{exc}")
+            return
+
+        self.active_rule_path = rule_path
+        self.active_config = config
+        self._refresh_rules_section()
+        self.status_label.setText(f"\u5df2\u5bfc\u5165\u89c4\u5219\u6587\u4ef6\uff1a{rule_path}")
+
+    def save_active_rule_file(self) -> None:
+        selected, _ = QFileDialog.getSaveFileName(
+            self,
+            "\u4fdd\u5b58\u5f53\u524d\u89c4\u5219",
+            "rules.json",
+            "JSON (*.json);;\u6240\u6709\u6587\u4ef6 (*)",
+        )
+        if not selected:
+            self.status_label.setText("\u5df2\u53d6\u6d88\u89c4\u5219\u4fdd\u5b58\u3002")
+            return
+
+        out_path = Path(selected)
+        try:
+            out_path.write_text(
+                json.dumps(config_to_dict(self.active_config), ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            self.status_label.setText(f"\u89c4\u5219\u4fdd\u5b58\u5931\u8d25\uff1a{exc}")
+            return
+        self.status_label.setText(f"\u89c4\u5219\u5df2\u4fdd\u5b58\u5230 {out_path}")
 
     def _metric_card(self, key: str, title: str, hint: str) -> QFrame:
         card = QFrame()

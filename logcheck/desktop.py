@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 import sys
 
@@ -8,6 +9,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QComboBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -17,11 +20,13 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from .analysis import analyze_logs, summarize_result
+from .config import default_config
 from .exporters import export_csv, export_json, export_markdown
 from .models import AnalysisResult, Finding
 
@@ -57,7 +62,6 @@ UI_TEXT = {
     "nav_rules": "\u68c0\u6d4b\u89c4\u5219",
     "nav_suspicious": "\u53ef\u7591\u6765\u6e90",
     "nav_export": "\u5bfc\u51fa\u62a5\u544a",
-    "nav_demo": "\u8bfe\u7a0b\u6f14\u793a",
     "recent": "\u6700\u8fd1\u5206\u6790",
     "settings": "\u8bbe\u7f6e",
     "main_title": "\u5165\u4fb5\u884c\u4e3a\u5206\u6790\u603b\u89c8",
@@ -85,6 +89,13 @@ UI_TEXT = {
     "export": "\u5bfc\u51fa JSON / CSV / Markdown",
     "status_start": "\u8bf7\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u5f00\u59cb\u5206\u6790\u3002",
 }
+NAV_ITEMS = (
+    "nav_overview",
+    "nav_sources",
+    "nav_rules",
+    "nav_suspicious",
+    "nav_export",
+)
 
 
 @dataclass(frozen=True)
@@ -93,6 +104,13 @@ class FindingRow:
     title: str
     subtitle: str
     location: str
+
+
+@dataclass(frozen=True)
+class AnalysisRun:
+    label: str
+    paths: list[Path]
+    result: AnalysisResult
 
 
 def format_finding_row(finding: Finding) -> FindingRow:
@@ -115,9 +133,17 @@ class LogcheckDesktop(QMainWindow):
     def __init__(self):
         super().__init__()
         self.selected_paths: list[Path] = []
+        self.source_folder: Path | None = None
+        self.source_files: list[Path] = []
+        self.selected_source_paths: list[Path] = []
+        self.standalone_paths: list[Path] = []
+        self.analysis_history: list[AnalysisRun] = []
+        self.selected_history_index: int | None = None
         self.latest_result: AnalysisResult | None = None
         self.metric_labels: dict[str, QLabel] = {}
         self.nav_buttons: dict[str, QPushButton] = {}
+        self.section_widgets: dict[str, QWidget] = {}
+        self.source_file_checks: dict[Path, QCheckBox] = {}
         self.current_section = UI_TEXT["nav_overview"]
 
         self.setWindowTitle(UI_TEXT["window_title"])
@@ -137,10 +163,25 @@ class LogcheckDesktop(QMainWindow):
                 padding: 9px 16px;
                 font-size: {FONT_SIZES["normal"]}pt;
             }}
+            QPushButton:hover {{
+                background: #303030;
+                border-color: #666666;
+            }}
+            QPushButton:pressed {{
+                background: #f5f5f5;
+                color: #111111;
+                padding-top: 11px;
+                padding-bottom: 7px;
+            }}
             QPushButton#primary {{
                 background: {ACCENT};
                 color: {BG};
                 font-weight: 700;
+            }}
+            QPushButton#primary:hover, QPushButton#primary:pressed {{
+                background: #ffffff;
+                color: {BG};
+                border-color: #ffffff;
             }}
             QFrame#panel, QFrame#card, QFrame#row {{
                 background: {PANEL};
@@ -148,6 +189,18 @@ class LogcheckDesktop(QMainWindow):
             }}
             QFrame#row {{ background: {PANEL_2}; }}
             QScrollArea {{ border: none; background: {PANEL}; }}
+            QComboBox {{
+                background: {PANEL_2};
+                color: {TEXT};
+                border: 1px solid {BORDER};
+                padding: 8px 10px;
+                font-size: {FONT_SIZES["normal"]}pt;
+            }}
+            QCheckBox {{
+                color: {TEXT};
+                spacing: 10px;
+                font-size: {FONT_SIZES["normal"]}pt;
+            }}
         """
 
     def _label(self, text: str, size_key: str = "normal", color: str = TEXT, *, bold: bool = False) -> QLabel:
@@ -195,13 +248,11 @@ class LogcheckDesktop(QMainWindow):
         layout.addWidget(self._label(UI_TEXT["sidebar_title"], "title", bold=True))
         layout.addWidget(self._label(UI_TEXT["sidebar_subtitle"], "normal", MUTED))
         layout.addSpacing(18)
-        for index, key in enumerate(
-            ["nav_overview", "nav_sources", "nav_rules", "nav_suspicious", "nav_export", "nav_demo"]
-        ):
+        for index, key in enumerate(NAV_ITEMS):
             button = QPushButton(UI_TEXT[key])
             button.setObjectName("primary" if index == 0 else "")
             button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(lambda _checked=False, item=key: self._select_nav(item))
+            button.clicked.connect(lambda _checked=False, item=key: self._activate_nav(item))
             self.nav_buttons[key] = button
             layout.addWidget(button)
         layout.addStretch(1)
@@ -212,6 +263,17 @@ class LogcheckDesktop(QMainWindow):
         return side
 
     def _main_area(self) -> QWidget:
+        self.workspace_stack = QStackedWidget()
+        self.section_widgets["nav_overview"] = self._overview_section()
+        self.section_widgets["nav_sources"] = self._sources_section()
+        self.section_widgets["nav_rules"] = self._rules_section()
+        self.section_widgets["nav_suspicious"] = self._suspicious_section()
+        self.section_widgets["nav_export"] = self._export_section()
+        for key in NAV_ITEMS:
+            self.workspace_stack.addWidget(self.section_widgets[key])
+        return self.workspace_stack
+
+    def _overview_section(self) -> QWidget:
         main = QWidget()
         layout = QVBoxLayout(main)
         layout.setContentsMargins(34, 34, 34, 34)
@@ -250,6 +312,118 @@ class LogcheckDesktop(QMainWindow):
         content.addWidget(self._details_panel())
         layout.addLayout(content, 1)
         return main
+
+    def _simple_section(self, title: str, subtitle: str, lines: list[str]) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(34, 34, 34, 34)
+        layout.setSpacing(14)
+        layout.addWidget(self._label(title, "title", bold=True))
+        layout.addWidget(self._label(subtitle, "normal", MUTED))
+        panel = QFrame()
+        panel.setObjectName("panel")
+        panel_box = QVBoxLayout(panel)
+        panel_box.setContentsMargins(20, 18, 20, 18)
+        panel_box.setSpacing(10)
+        for line in lines:
+            panel_box.addWidget(self._label(line, "normal", MUTED))
+        panel_box.addStretch(1)
+        layout.addWidget(panel, 1)
+        return section
+
+    def _sources_section(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(34, 34, 34, 34)
+        layout.setSpacing(14)
+        layout.addWidget(self._label(UI_TEXT["nav_sources"], "title", bold=True))
+        layout.addWidget(self._label("\u7ba1\u7406\u5f85\u5206\u6790\u7684\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002", "normal", MUTED))
+
+        actions = QHBoxLayout()
+        folder_button = QPushButton("\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
+        folder_button.clicked.connect(self.choose_source_folder)
+        standalone_button = QPushButton("\u9009\u62e9\u5355\u72ec\u65e5\u5fd7\u6587\u4ef6")
+        standalone_button.clicked.connect(self.choose_logs)
+        actions.addWidget(folder_button)
+        actions.addWidget(standalone_button)
+        actions.addStretch(1)
+        layout.addLayout(actions)
+
+        panel = QFrame()
+        panel.setObjectName("panel")
+        panel_box = QVBoxLayout(panel)
+        panel_box.setContentsMargins(20, 18, 20, 18)
+        panel_box.setSpacing(10)
+        self.sources_section_label = self._label("\u5f53\u524d\u672a\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6\u3002", "normal", MUTED)
+        panel_box.addWidget(self.sources_section_label)
+
+        self.source_file_list = QWidget()
+        self.source_file_list_layout = QVBoxLayout(self.source_file_list)
+        self.source_file_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.source_file_list_layout.setSpacing(6)
+        self.source_file_list_layout.addStretch(1)
+        source_scroll = QScrollArea()
+        source_scroll.setWidgetResizable(True)
+        source_scroll.setWidget(self.source_file_list)
+        panel_box.addWidget(source_scroll, 1)
+        layout.addWidget(panel, 1)
+        return section
+
+    def _rules_section(self) -> QWidget:
+        section = self._simple_section(
+            UI_TEXT["nav_rules"],
+            "\u67e5\u770b\u672c\u5730\u5206\u6790\u4f7f\u7528\u7684\u68c0\u6d4b\u89c4\u5219\u72b6\u6001\u3002",
+            [self._format_rules_text()],
+        )
+        self.rules_section_label = section.findChildren(QLabel)[-1]
+        return section
+
+    def _suspicious_section(self) -> QWidget:
+        section = self._simple_section(
+            UI_TEXT["nav_suspicious"],
+            "\u6839\u636e\u6700\u8fd1\u4e00\u6b21\u672c\u5730\u5206\u6790\u6c47\u603b\u53ef\u7591\u8d26\u53f7\u6216\u5730\u5740\u3002",
+            ["\u5c1a\u672a\u8fd0\u884c\u5206\u6790\uff0c\u6682\u65e0\u53ef\u7591\u6765\u6e90\u3002"],
+        )
+        self.suspicious_sources_label = section.findChildren(QLabel)[-1]
+        return section
+
+    def _export_section(self) -> QWidget:
+        section = QWidget()
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(34, 34, 34, 34)
+        layout.setSpacing(14)
+        layout.addWidget(self._label(UI_TEXT["nav_export"], "title", bold=True))
+        layout.addWidget(
+            self._label("\u9009\u62e9\u672c\u6b21\u4f1a\u8bdd\u4e2d\u67d0\u4e00\u6b21\u5206\u6790\u7ed3\u679c\u5bfc\u51fa\u62a5\u544a\u3002", "normal", MUTED)
+        )
+        panel = QFrame()
+        panel.setObjectName("panel")
+        panel_box = QVBoxLayout(panel)
+        panel_box.setContentsMargins(20, 18, 20, 18)
+        panel_box.setSpacing(12)
+        self.export_history_combo = QComboBox()
+        self.export_history_combo.currentIndexChanged.connect(self._select_history_index)
+        panel_box.addWidget(self.export_history_combo)
+        export_button = QPushButton(UI_TEXT["export"])
+        export_button.setObjectName("primary")
+        export_button.clicked.connect(self.export_reports)
+        panel_box.addWidget(export_button)
+        self.export_history_label = self._label("\u5c1a\u65e0\u53ef\u5bfc\u51fa\u7684\u5206\u6790\u5386\u53f2\u3002", "normal", MUTED)
+        panel_box.addWidget(self.export_history_label)
+        panel_box.addStretch(1)
+        layout.addWidget(panel, 1)
+        return section
+
+    def _format_rules_text(self) -> str:
+        config = default_config()
+        lines = ["\u5173\u952e\u8bcd\u89c4\u5219\uff1a"]
+        for group, keywords in sorted(config.keywords.items()):
+            lines.append(f"- {group}: {', '.join(keywords)}")
+        lines.append(
+            f"\u91cd\u590d\u5931\u8d25\u767b\u5f55\uff1a{config.brute_force_threshold} "
+            f"\u6b21 / {config.brute_force_window_minutes} \u5206\u949f"
+        )
+        return "\n".join(lines)
 
     def _metric_card(self, key: str, title: str, hint: str) -> QFrame:
         card = QFrame()
@@ -315,8 +489,12 @@ class LogcheckDesktop(QMainWindow):
         layout.addWidget(self.status_label)
         return panel
 
+    def _activate_nav(self, key: str) -> None:
+        self._select_nav(key)
+
     def _select_nav(self, key: str) -> None:
         self.current_section = UI_TEXT[key]
+        self.workspace_stack.setCurrentWidget(self.section_widgets[key])
         for nav_key, button in self.nav_buttons.items():
             button.setObjectName("primary" if nav_key == key else "")
             button.style().unpolish(button)
@@ -324,23 +502,97 @@ class LogcheckDesktop(QMainWindow):
         self.status_label.setText(f"\u5df2\u5207\u6362\u5230\uff1a{self.current_section}")
 
     def choose_logs(self) -> None:
-        paths, _selected_filter = QFileDialog.getOpenFileNames(self, "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6")
+        paths = self.choose_standalone_logs()
         if not paths:
             self.status_label.setText("\u5df2\u53d6\u6d88\u65e5\u5fd7\u9009\u62e9\u3002")
             return
-        self.selected_paths = [Path(path) for path in paths]
+        self.standalone_paths = paths
+        self.selected_paths = paths
+        self.selected_source_paths = []
         self.logs_label.setText("\n".join(path.name for path in self.selected_paths))
+        self.sources_section_label.setText("\n".join(str(path) for path in self.selected_paths))
+        self._clear_source_file_checks()
         self.status_label.setText(f"\u5df2\u9009\u62e9 {len(self.selected_paths)} \u4e2a\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
 
+    def choose_source_folder(self) -> None:
+        selected = QFileDialog.getExistingDirectory(self, "\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
+        if not selected:
+            self.status_label.setText("\u5df2\u53d6\u6d88\u65e5\u5fd7\u6e90\u9009\u62e9\u3002")
+            return
+        self.set_log_source_folder(Path(selected))
+
+    def choose_standalone_logs(self) -> list[Path]:
+        paths, _selected_filter = QFileDialog.getOpenFileNames(self, "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6")
+        return [Path(path) for path in paths]
+
+    def discover_source_files(self, folder: Path) -> list[Path]:
+        return sorted(path for path in folder.iterdir() if path.is_file())
+
+    def set_log_source_folder(self, folder: Path) -> None:
+        self.source_folder = folder
+        self.source_files = self.discover_source_files(folder)
+        self.selected_source_paths = list(self.source_files)
+        self.standalone_paths = []
+        if not self.source_files:
+            text = f"{folder}\n\u672a\u53d1\u73b0\u53ef\u7528\u65e5\u5fd7\u6587\u4ef6\u3002"
+        else:
+            text = f"{folder}\n{len(self.source_files)} \u4e2a\u6587\u4ef6"
+        self.sources_section_label.setText(text)
+        self._refresh_source_file_checks()
+        self.logs_label.setText("\n".join(path.name for path in self.selected_source_paths) or UI_TEXT["no_logs"])
+        self.status_label.setText(f"\u5df2\u8f7d\u5165\u65e5\u5fd7\u6e90\uff1a{len(self.source_files)} \u4e2a\u6587\u4ef6\u3002")
+
+    def _clear_source_file_checks(self) -> None:
+        self.source_file_checks = {}
+        while self.source_file_list_layout.count():
+            item = self.source_file_list_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def _refresh_source_file_checks(self) -> None:
+        self._clear_source_file_checks()
+        if not self.source_files:
+            self.source_file_list_layout.addWidget(self._label("\u6682\u65e0\u53ef\u9009\u6587\u4ef6\u3002", "normal", MUTED))
+            self.source_file_list_layout.addStretch(1)
+            return
+        selected = set(self.selected_source_paths)
+        for path in self.source_files:
+            checkbox = QCheckBox(path.name)
+            checkbox.setChecked(path in selected)
+            checkbox.stateChanged.connect(self._sync_selected_source_paths)
+            self.source_file_checks[path] = checkbox
+            self.source_file_list_layout.addWidget(checkbox)
+        self.source_file_list_layout.addStretch(1)
+
+    def _sync_selected_source_paths(self) -> None:
+        self.selected_source_paths = [
+            path for path in self.source_files if self.source_file_checks[path].isChecked()
+        ]
+        self.selected_paths = list(self.selected_source_paths)
+        self.logs_label.setText("\n".join(path.name for path in self.selected_source_paths) or UI_TEXT["no_logs"])
+
+    def _resolve_analysis_paths(self) -> list[Path]:
+        if self.selected_source_paths:
+            return list(self.selected_source_paths)
+        if self.standalone_paths:
+            return list(self.standalone_paths)
+        if self.source_files:
+            return list(self.source_files)
+        return list(self.selected_paths)
+
     def run_analysis(self) -> None:
-        if not self.selected_paths:
+        paths = self._resolve_analysis_paths()
+        if not paths:
             self.status_label.setText("\u8bf7\u5148\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
             return
         try:
-            self.latest_result = analyze_logs(self.selected_paths)
+            self.latest_result = analyze_logs(paths)
         except OSError as exc:
             self.status_label.setText(f"\u65e0\u6cd5\u5206\u6790\u65e5\u5fd7\uff1a{exc}")
             return
+        self.selected_paths = paths
+        self._record_analysis_run(paths, self.latest_result)
         self._render_result(self.latest_result)
         self.status_label.setText("\u5206\u6790\u5b8c\u6210\u3002")
 
@@ -355,7 +607,54 @@ class LogcheckDesktop(QMainWindow):
         self.metric_labels["findings"].setText(str(summary.total_findings))
         self.metric_labels["high"].setText(str(high_count))
         self.metric_labels["sources"].setText(str(len(summary.top_suspicious_sources)))
+        self._refresh_suspicious_sources(summary.top_suspicious_sources)
         self._render_findings(result.findings)
+
+    def _refresh_suspicious_sources(self, sources: list[tuple[str, int]]) -> None:
+        if not sources:
+            self.suspicious_sources_label.setText("\u672a\u68c0\u6d4b\u5230\u53ef\u7591\u6765\u6e90\u3002")
+            return
+        self.suspicious_sources_label.setText("\n".join(f"{source} - {count}" for source, count in sources))
+
+    def _record_analysis_run(self, paths: list[Path], result: AnalysisResult) -> None:
+        label = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.analysis_history.append(AnalysisRun(label=label, paths=list(paths), result=result))
+        self.selected_history_index = len(self.analysis_history) - 1
+        self._refresh_export_history()
+
+    def _selected_analysis_run(self) -> AnalysisRun | None:
+        if self.selected_history_index is None:
+            return None
+        if not 0 <= self.selected_history_index < len(self.analysis_history):
+            return None
+        return self.analysis_history[self.selected_history_index]
+
+    def _refresh_export_history(self) -> None:
+        self.export_history_combo.blockSignals(True)
+        self.export_history_combo.clear()
+        if not self.analysis_history:
+            self.export_history_label.setText("\u5c1a\u65e0\u53ef\u5bfc\u51fa\u7684\u5206\u6790\u5386\u53f2\u3002")
+            self.export_history_combo.addItem("\u5c1a\u65e0\u5206\u6790\u5386\u53f2", None)
+            self.export_history_combo.setEnabled(False)
+            self.export_history_combo.blockSignals(False)
+            return
+        self.export_history_combo.setEnabled(True)
+        lines = []
+        for index, run in enumerate(self.analysis_history):
+            marker = "*" if index == self.selected_history_index else "-"
+            lines.append(f"{marker} {run.label} ({len(run.paths)} \u4e2a\u6587\u4ef6)")
+            self.export_history_combo.addItem(f"{run.label} - {len(run.paths)} \u4e2a\u6587\u4ef6", index)
+        if self.selected_history_index is not None:
+            self.export_history_combo.setCurrentIndex(self.selected_history_index)
+        self.export_history_label.setText("\n".join(lines))
+        self.export_history_combo.blockSignals(False)
+
+    def _select_history_index(self, index: int) -> None:
+        value = self.export_history_combo.itemData(index)
+        if value is None:
+            return
+        self.selected_history_index = int(value)
+        self._refresh_export_history()
 
     def _clear_findings(self) -> None:
         while self.finding_rows.count():
@@ -400,7 +699,8 @@ class LogcheckDesktop(QMainWindow):
         )
 
     def export_reports(self) -> None:
-        if self.latest_result is None:
+        run = self._selected_analysis_run()
+        if run is None:
             self.status_label.setText("\u8bf7\u5148\u8fd0\u884c\u5206\u6790\uff0c\u518d\u5bfc\u51fa\u62a5\u544a\u3002")
             return
         selected = QFileDialog.getExistingDirectory(self, "\u9009\u62e9\u672c\u5730\u62a5\u544a\u8f93\u51fa\u76ee\u5f55")
@@ -409,9 +709,9 @@ class LogcheckDesktop(QMainWindow):
             return
         out_dir = Path(selected)
         try:
-            export_json(self.latest_result, out_dir / "analysis.json")
-            export_csv(self.latest_result, out_dir / "analysis.csv")
-            export_markdown(self.latest_result, out_dir / "analysis.md")
+            export_json(run.result, out_dir / "analysis.json")
+            export_csv(run.result, out_dir / "analysis.csv")
+            export_markdown(run.result, out_dir / "analysis.md")
         except OSError as exc:
             self.status_label.setText(f"\u65e0\u6cd5\u5bfc\u51fa\u62a5\u544a\uff1a{exc}")
             return

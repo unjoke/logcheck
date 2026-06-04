@@ -1,0 +1,14 @@
+{
+  "change": "enhance-desktop-log-workflow",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "74f911f67eaacaff88cd6e1d106a722351c0edbbb1309cd1ad112b847da5b44c",
+  "files": [
+    { "path": "openspec/changes/enhance-desktop-log-workflow/proposal.md", "sha256": "ae5f145b5a5751a5a9b3e8e19561fd08912cb2917e3bffee79c9c880a4e561e7" },
+    { "path": "openspec/changes/enhance-desktop-log-workflow/design.md", "sha256": "a726c1a20ed6ac149c2c3a75ec7cb7a5a12a21b34f637d8461fc1badc01725fa" },
+    { "path": "openspec/changes/enhance-desktop-log-workflow/tasks.md", "sha256": "5419a376cd0ceea14ec90aefd00ed85db1ae53844b117a88a41ee4c8848363f5" },
+    { "path": "openspec/changes/enhance-desktop-log-workflow/specs/desktop-frontend/spec.md", "sha256": "aff16586f5d481bf3a8f1c64bcb41fedfcde7d9015649a741fc11c479d10b0fe" }
+  ]
+}

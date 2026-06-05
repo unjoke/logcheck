@@ -41,6 +41,25 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(brute_force[0].severity, "high")
         self.assertEqual(brute_force[0].count, 5)
 
+    def test_repeated_failed_logins_do_not_create_multi_signal_finding(self):
+        events = [
+            Event(
+                "auth.log",
+                i,
+                "Failed password",
+                category="auth",
+                source_address="192.0.2.10",
+                message="Failed password",
+            )
+            for i in range(1, 6)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(
+            any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
+        )
+
     def test_custom_threshold_is_applied(self):
         config = DetectionConfig(keywords=default_config().keywords, brute_force_threshold=2)
         events = [

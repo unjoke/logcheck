@@ -118,7 +118,7 @@ def _brute_force_findings(events: list[Event], config: DetectionConfig) -> list[
 def _multi_signal_findings(findings: list[Finding]) -> list[Finding]:
     buckets: dict[tuple[str, str], list[Finding]] = defaultdict(list)
     for finding in findings:
-        if finding.rule_id.startswith("behavior."):
+        if finding.rule_id.startswith(("behavior.", "correlation.")):
             continue
         if finding.source_address:
             buckets[("source", finding.source_address)].append(finding)

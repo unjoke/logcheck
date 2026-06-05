@@ -32,6 +32,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(event.category, "unknown")
         self.assertEqual(event.raw_line, "not a known format")
 
+    def test_empty_file_produces_no_events_without_crashing(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "empty.log"
+            path.write_text("", encoding="utf-8")
+
+            events = parse_files([path])
+
+        self.assertEqual(events, [])
+
+    def test_unknown_lines_preserve_source_context(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "app.log"
+            path.write_text("not a known auth line\n", encoding="utf-8")
+
+            events = parse_files([path])
+
+        self.assertEqual(events[0].source_file, str(path))
+        self.assertEqual(events[0].line_number, 1)
+        self.assertEqual(events[0].category, "unknown")
+        self.assertEqual(events[0].raw_line, "not a known auth line")
+
     def test_missing_file_raises_file_not_found(self):
         with self.assertRaises(FileNotFoundError):
             parse_files([Path("missing.log")])

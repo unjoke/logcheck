@@ -26,15 +26,17 @@ class Finding:
     rule_id: str
     severity: str
     explanation: str
-    evidence: list[str]
-    source_file: str
-    line_number: int
+    evidence: list[str] = field(default_factory=list)
+    source_file: str | None = None
+    line_number: int | None = None
     timestamp: datetime | None = None
     source_address: str | None = None
     actor: str | None = None
     target: str | None = None
     matched_keyword: str | None = None
     count: int | None = None
+    severity_reason: str | None = None
+    confidence_reason: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -50,6 +52,8 @@ class Finding:
             "target": self.target,
             "matched_keyword": self.matched_keyword,
             "count": self.count,
+            "severity_reason": self.severity_reason,
+            "confidence_reason": self.confidence_reason,
         }
 
 
@@ -64,3 +68,5 @@ class DetectionConfig:
 class AnalysisResult:
     events: list[Event] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
+    diagnostics: list[str] = field(default_factory=list)
+    insights: object | None = None

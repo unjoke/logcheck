@@ -1,6 +1,6 @@
 import unittest
 
-from logcheck.models import Event, Finding
+from logcheck.models import AnalysisResult, Event, Finding
 
 
 class ModelTests(unittest.TestCase):
@@ -25,6 +25,27 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(data["severity"], "medium")
         self.assertEqual(data["source_address"], "192.0.2.10")
         self.assertEqual(data["evidence"], ["failed password for root"])
+
+    def test_analysis_result_can_carry_diagnostics_and_insights(self):
+        result = AnalysisResult()
+
+        self.assertEqual(result.diagnostics, [])
+        self.assertIsNone(result.insights)
+
+    def test_finding_exports_reason_fields_when_present(self):
+        finding = Finding(
+            rule_id="behavior.suspicious_command",
+            severity="high",
+            explanation="Suspicious command execution",
+            evidence=["curl http://example.invalid"],
+            severity_reason="Suspicious command matched high-risk indicator",
+            confidence_reason="Exact command keyword match",
+        )
+
+        data = finding.to_dict()
+
+        self.assertEqual(data["severity_reason"], "Suspicious command matched high-risk indicator")
+        self.assertEqual(data["confidence_reason"], "Exact command keyword match")
 
 
 if __name__ == "__main__":

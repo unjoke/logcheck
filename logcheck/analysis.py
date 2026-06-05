@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import load_config
+from .insights import generate_insights
 from .models import AnalysisResult
 from .parsers import parse_files
 from .rules import detect_findings
@@ -21,7 +22,9 @@ class AnalysisSummary:
 def analyze_logs(paths: list[Path], config_path: Path | None = None) -> AnalysisResult:
     config = load_config(config_path)
     events = parse_files(paths)
-    return AnalysisResult(events=events, findings=detect_findings(events, config))
+    result = AnalysisResult(events=events, findings=detect_findings(events, config))
+    result.insights = generate_insights(result)
+    return result
 
 
 def summarize_result(result: AnalysisResult) -> AnalysisSummary:

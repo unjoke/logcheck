@@ -10,6 +10,7 @@ class AnalysisTests(unittest.TestCase):
 
         self.assertGreater(len(result.events), 0)
         self.assertGreater(len(result.findings), 0)
+        self.assertIsNotNone(result.insights)
 
     def test_summarize_result_counts_findings(self):
         result = analyze_logs([Path("samples/auth.log"), Path("samples/app.log")])

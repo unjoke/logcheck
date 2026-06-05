@@ -2,8 +2,8 @@
 
 - [x] 1.1 Add tests for richer event metadata and batch ingestion diagnostics.
 - [x] 1.2 Extend parser/event models to preserve diagnostics, parser confidence where available, and mixed-format context.
-- [ ] 1.3 Add tests for enhanced behavior-pattern rules, severity reasons, confidence reasons, and invalid rule validation.
-- [ ] 1.4 Implement deterministic enhanced rule patterns and safe local rule validation.
+- [x] 1.3 Add tests for enhanced behavior-pattern rules, severity reasons, confidence reasons, and invalid rule validation.
+- [x] 1.4 Implement deterministic enhanced rule patterns and safe local rule validation.
 
 ## 2. Local Analysis Insights
 

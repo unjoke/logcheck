@@ -1,0 +1,16 @@
+workflow: full
+phase: build
+build_mode: subagent-driven-development
+isolation: worktree
+verify_mode: null
+base_ref: 00d81df06526b229653fe17d95ee95215ec6bc65
+design_doc: docs/superpowers/specs/2026-06-05-comprehensive-logcheck-iteration-design.md
+plan: docs/superpowers/plans/2026-06-05-comprehensive-logcheck-iteration.md
+verify_result: pending
+verification_report: null
+branch_status: pending
+created_at: 2026-06-05
+verified_at: null
+archived: false
+handoff_context: openspec/changes/comprehensive-logcheck-iteration/.comet/handoff/design-context.json
+handoff_hash: 913f8000d10fc276390b962cf30abe019b2b5e5aba44d69c31132d35a0b04c2d

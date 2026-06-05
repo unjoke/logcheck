@@ -7,10 +7,10 @@
 
 ## 2. Local Analysis Insights
 
-- [ ] 2.1 Add tests for insight summaries, suspicious entity profiles, timeline highlights, missing timestamp handling, and non-destructive suggestions.
-- [ ] 2.2 Add an `analysis-insights` module or equivalent local post-processing layer.
-- [ ] 2.3 Integrate insight generation with analysis results without changing the local-only safety boundary.
-- [ ] 2.4 Add CLI or analysis-level access to insight summaries where appropriate.
+- [x] 2.1 Add tests for insight summaries, suspicious entity profiles, timeline highlights, missing timestamp handling, and non-destructive suggestions.
+- [x] 2.2 Add an `analysis-insights` module or equivalent local post-processing layer.
+- [x] 2.3 Integrate insight generation with analysis results without changing the local-only safety boundary.
+- [x] 2.4 Add CLI or analysis-level access to insight summaries where appropriate.
 
 ## 3. Desktop Frontend Iteration
 

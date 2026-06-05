@@ -19,11 +19,27 @@ def _metadata(result: AnalysisResult) -> dict[str, object]:
     }
 
 
+def _insights_to_dict(insights: object | None) -> dict[str, object] | None:
+    if insights is None:
+        return None
+    return {
+        "risk_level": insights.risk_level,
+        "headline": insights.headline,
+        "evidence_count": insights.evidence_count,
+        "entity_profiles": [profile.__dict__ for profile in insights.entity_profiles],
+        "timeline": [item.__dict__ for item in insights.timeline],
+        "suggestions": [suggestion.__dict__ for suggestion in insights.suggestions],
+    }
+
+
 def export_json(result: AnalysisResult, path: Path) -> None:
     payload = {
         **_metadata(result),
         "findings": [finding.to_dict() for finding in result.findings],
     }
+    insights = _insights_to_dict(result.insights)
+    if insights is not None:
+        payload["insights"] = insights
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -58,9 +74,43 @@ def export_markdown(result: AnalysisResult, path: Path) -> None:
         f"- Total findings: {meta['total_findings']}",
         f"- Findings by severity: {meta['findings_by_severity']}",
         "",
+    ]
+    if result.insights is not None:
+        insights = result.insights
+        lines.extend(
+            [
+                "## Investigation Insights",
+                "",
+                f"- Risk level: {insights.risk_level}",
+                f"- Summary: {insights.headline}",
+                f"- Evidence count: {insights.evidence_count}",
+                "",
+            ]
+        )
+        if insights.entity_profiles:
+            lines.extend(["### Top Entities", ""])
+            for profile in insights.entity_profiles:
+                lines.append(
+                    f"- {profile.kind} `{profile.value}`: {profile.finding_count} findings, "
+                    f"severities {profile.severity_counts}, rules {', '.join(profile.related_rules)}"
+                )
+            lines.append("")
+        if insights.timeline:
+            lines.extend(["### Timeline", ""])
+            for item in insights.timeline:
+                lines.append(f"- {item.label}: {item.severity} {item.rule_id} for {item.entity} in {item.source}")
+            lines.append("")
+        if insights.suggestions:
+            lines.extend(["### Suggestions", ""])
+            for suggestion in insights.suggestions:
+                lines.append(f"- {suggestion.title}: {suggestion.detail}")
+            lines.append("")
+    lines.extend(
+        [
         "## Findings",
         "",
-    ]
+        ]
+    )
     for finding in result.findings:
         lines.extend(
             [

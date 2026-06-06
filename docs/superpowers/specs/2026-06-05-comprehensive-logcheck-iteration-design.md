@@ -2,6 +2,8 @@
 comet_change: comprehensive-logcheck-iteration
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-06-comprehensive-logcheck-iteration
+status: final
 ---
 
 # Comprehensive Logcheck Iteration Design

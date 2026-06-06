@@ -1,32 +1,16 @@
-## Purpose
-The project provides reproducible course-deliverable materials, including sample data, verification coverage, packaging guidance, and report-aligned documentation.
+## ADDED Requirements
 
-## Requirements
+### Requirement: Demonstrate comprehensive local iteration
+The project SHALL include evidence that the comprehensive iteration improves frontend polish, backend analysis behavior, reports, and local safety.
 
-### Requirement: Provide reproducible sample data
-The project SHALL include sample log files that demonstrate normal behavior, keyword detections, brute-force detections, and malformed-line handling.
+#### Scenario: Automated verification evidence
+- **WHEN** the project test suite is run
+- **THEN** tests cover parser diagnostics, enhanced rules, insight generation, report export, CLI compatibility, and desktop workflows
 
-#### Scenario: Run demo sample
-- **WHEN** the user runs the documented demo command against the sample logs
-- **THEN** the system produces findings that cover the major detection rules
+#### Scenario: Manual desktop verification evidence
+- **WHEN** the iterated desktop frontend is reviewed
+- **THEN** screenshots or notes show the polished workspace, multi-source workflow, findings, insights, and export section
 
-### Requirement: Provide verification coverage
-The project SHALL include tests for parsing, detection, export, and CLI behavior.
-
-#### Scenario: Run automated tests
-- **WHEN** the user runs the documented test command
-- **THEN** parser, rule engine, exporter, and CLI tests execute successfully
-
-### Requirement: Support course submission package
-The project SHALL provide documentation and build commands for producing source code, executable or runnable script, sample outputs, and report material.
-
-#### Scenario: Prepare submission artifacts
-- **WHEN** the user follows the packaging instructions
-- **THEN** the resulting package contains source code, runnable entry point, sample logs, exported analysis result, and report notes
-
-### Requirement: Align with course report template
-The documentation SHALL map implementation details to the course report sections, including background, theory, architecture, module design, tests, results, limitations, and future work.
-
-#### Scenario: Write course report
-- **WHEN** the user writes the course design paper
-- **THEN** the project documentation provides section-level material matching the provided template
+#### Scenario: Local-only safety evidence
+- **WHEN** the comprehensive iteration is demonstrated
+- **THEN** the deliverable evidence shows that no URL, domain, remote upload, network scan, blocking, exploitation, or external reporting controls were added

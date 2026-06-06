@@ -14,11 +14,11 @@
 
 ## 3. Desktop Frontend Iteration
 
-- [ ] 3.1 Add desktop tests for polished layout expectations, removed duplicated export controls, consistent source workflow, and insight rendering.
-- [ ] 3.2 Refine the desktop stylesheet and layout hierarchy so panels, rows, labels, scroll areas, and buttons look intentional and consistent.
-- [ ] 3.3 Improve Log Sources ergonomics for multiple folders/files, diagnostics, selection state, and analysis actions.
-- [ ] 3.4 Add insight summary and entity profile rendering to the desktop review workflow.
-- [ ] 3.5 Re-check local-only UI controls after the redesign.
+- [x] 3.1 Add desktop tests for polished layout expectations, removed duplicated export controls, consistent source workflow, and insight rendering.
+- [x] 3.2 Refine the desktop stylesheet and layout hierarchy so panels, rows, labels, scroll areas, and buttons look intentional and consistent.
+- [x] 3.3 Improve Log Sources ergonomics for multiple folders/files, diagnostics, selection state, and analysis actions.
+- [x] 3.4 Add insight summary and entity profile rendering to the desktop review workflow.
+- [x] 3.5 Re-check local-only UI controls after the redesign.
 
 ## 4. Report Export Iteration
 

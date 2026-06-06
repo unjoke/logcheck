@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
 from .analysis import analyze_logs, summarize_result
 from .config import config_to_dict, default_config, load_config
 from .exporters import export_csv, export_json, export_markdown
+from .insights import generate_insights
 from .models import AnalysisResult, Finding
 
 
@@ -192,6 +193,7 @@ class LogcheckDesktop(QMainWindow):
             }}
             QFrame#row {{ background: {PANEL_2}; }}
             QScrollArea {{ border: none; background: {PANEL}; }}
+            QScrollArea QWidget {{ background: {PANEL}; color: {TEXT}; }}
             QComboBox {{
                 background: {PANEL_2};
                 color: {TEXT};
@@ -261,8 +263,6 @@ class LogcheckDesktop(QMainWindow):
         layout.addStretch(1)
         layout.addWidget(self._label(UI_TEXT["recent"], "bold", MUTED, bold=True))
         layout.addWidget(self._label("samples/auth.log + app.log", "small", MUTED))
-        layout.addSpacing(16)
-        layout.addWidget(self._label(UI_TEXT["settings"], "normal"))
         return side
 
     def _main_area(self) -> QWidget:
@@ -345,7 +345,7 @@ class LogcheckDesktop(QMainWindow):
         actions = QHBoxLayout()
         folder_button = QPushButton("\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
         folder_button.clicked.connect(self.choose_source_folder)
-        standalone_button = QPushButton("\u9009\u62e9\u5355\u72ec\u65e5\u5fd7\u6587\u4ef6")
+        standalone_button = QPushButton("\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6")
         standalone_button.clicked.connect(self.choose_logs)
         analyze_selected_button = QPushButton("\u5206\u6790\u9009\u4e2d\u65e5\u5fd7")
         analyze_selected_button.setObjectName("primary")
@@ -546,6 +546,9 @@ class LogcheckDesktop(QMainWindow):
         layout.addWidget(self._label(UI_TEXT["rule_status"], "bold", bold=True))
         for key in ["rule_keyword", "rule_repeated", "rule_severity"]:
             layout.addWidget(self._label(f"- {UI_TEXT[key]}", "normal"))
+        layout.addWidget(self._label("\u5206\u6790\u6d1e\u5bdf", "bold", bold=True))
+        self.insight_summary_label = self._label("\u5c1a\u672a\u751f\u6210\u6d1e\u5bdf\u6458\u8981\u3002", "small", MUTED)
+        layout.addWidget(self.insight_summary_label)
         layout.addWidget(self._label(UI_TEXT["finding_detail"], "bold", bold=True))
         self.detail_label = self._label(UI_TEXT["detail_empty"], "small", MUTED)
         self.detail_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -559,15 +562,6 @@ class LogcheckDesktop(QMainWindow):
         self.detail_scroll.setMinimumHeight(150)
         self.detail_scroll.setWidget(detail_widget)
         layout.addWidget(self.detail_scroll, 1)
-        export_box = QFrame()
-        export_box.setObjectName("row")
-        export_layout = QVBoxLayout(export_box)
-        export_layout.setContentsMargins(12, 10, 12, 10)
-        export_layout.addWidget(self._label("导出", "bold", bold=True))
-        self.export_button = QPushButton(UI_TEXT["export"])
-        self.export_button.clicked.connect(self.export_reports)
-        export_layout.addWidget(self.export_button)
-        layout.addWidget(export_box)
         self.status_label = self._label(UI_TEXT["status_start"], "small", MUTED)
         layout.addWidget(self.status_label)
         return panel
@@ -604,6 +598,16 @@ class LogcheckDesktop(QMainWindow):
             return
         self.set_log_source_folder(Path(selected))
 
+    def choose_source_folders(self) -> None:
+        dialog = QFileDialog(self, "\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        if not dialog.exec():
+            self.status_label.setText("\u5df2\u53d6\u6d88\u65e5\u5fd7\u6e90\u9009\u62e9\u3002")
+            return
+        self.set_log_source_folders([Path(path) for path in dialog.selectedFiles()])
+
     def choose_standalone_logs(self) -> list[Path]:
         paths, _selected_filter = QFileDialog.getOpenFileNames(self, "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6")
         return [Path(path) for path in paths]
@@ -612,15 +616,23 @@ class LogcheckDesktop(QMainWindow):
         return sorted(path for path in folder.iterdir() if path.is_file())
 
     def set_log_source_folder(self, folder: Path) -> None:
-        self.source_folder = folder
-        self.source_files = self.discover_source_files(folder)
+        self.set_log_source_folders([folder])
+
+    def set_log_source_folders(self, folders: list[Path]) -> None:
+        self.source_folder = folders[0] if len(folders) == 1 else None
+        self.source_files = [
+            file_path
+            for folder in folders
+            for file_path in self.discover_source_files(folder)
+        ]
         self.selected_source_paths = list(self.source_files)
         self.standalone_paths = []
         self.selected_paths = list(self.selected_source_paths)
+        folder_text = "\n".join(str(folder) for folder in folders)
         if not self.source_files:
-            text = f"{folder}\n\u672a\u53d1\u73b0\u53ef\u7528\u65e5\u5fd7\u6587\u4ef6\u3002"
+            text = f"{folder_text}\n\u672a\u53d1\u73b0\u53ef\u7528\u65e5\u5fd7\u6587\u4ef6\u3002"
         else:
-            text = f"{folder}\n{len(self.source_files)} \u4e2a\u6587\u4ef6"
+            text = f"{folder_text}\n{len(self.source_files)} \u4e2a\u6587\u4ef6"
         self.sources_section_label.setText(text)
         self._refresh_source_file_checks()
         self.logs_label.setText("\n".join(path.name for path in self.selected_source_paths) or UI_TEXT["no_logs"])
@@ -693,7 +705,20 @@ class LogcheckDesktop(QMainWindow):
         self.metric_labels["high"].setText(str(high_count))
         self.metric_labels["sources"].setText(str(len(summary.top_suspicious_sources)))
         self._refresh_suspicious_sources(summary.top_suspicious_sources)
+        self._refresh_insight_summary(result)
         self._render_findings(result.findings)
+
+    def _refresh_insight_summary(self, result: AnalysisResult) -> None:
+        insights = getattr(result, "insights", None) or generate_insights(result)
+        entities = ", ".join(profile.value for profile in insights.entity_profiles[:3])
+        if not entities:
+            entities = "\u6682\u65e0\u53ef\u7591\u5b9e\u4f53"
+        self.insight_summary_label.setText(
+            f"\u98ce\u9669\uff1a{insights.risk_level}\n"
+            f"{insights.headline}\n"
+            f"\u53ef\u7591\u5b9e\u4f53\uff1a{entities}\n"
+            f"\u8bc1\u636e\uff1a{insights.evidence_count} \u6761"
+        )
 
     def _refresh_suspicious_sources(self, sources: list[tuple[str, int]]) -> None:
         if not sources:

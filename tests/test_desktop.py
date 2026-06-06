@@ -8,9 +8,10 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QPushButton, QScrollArea
+from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QLabel, QPushButton, QScrollArea
 
 from logcheck import desktop
+from logcheck.insights import generate_insights
 from logcheck.models import AnalysisResult, Event, Finding
 
 
@@ -90,6 +91,34 @@ class DesktopTests(unittest.TestCase):
             self.assertNotIn("old.log", window.sources_section_label.text())
             self.assertEqual(len(window.source_file_checks), 2)
             self.assertTrue(all(check.isChecked() for check in window.source_file_checks.values()))
+
+        window.close()
+
+    def test_multiple_source_folders_combine_direct_files_only(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            first_root = base / "one"
+            second_root = base / "two"
+            first_root.mkdir()
+            second_root.mkdir()
+            first = first_root / "auth.log"
+            second = second_root / "app.log"
+            nested = second_root / "archive"
+            nested.mkdir()
+            nested_file = nested / "old.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+            nested_file.write_text("old", encoding="utf-8")
+
+            window.set_log_source_folders([first_root, second_root])
+
+            self.assertEqual(window.source_files, [first, second])
+            self.assertEqual(window.selected_source_paths, [first, second])
+            self.assertIn("2", window.sources_section_label.text())
+            self.assertNotIn("old.log", window.sources_section_label.text())
+            self.assertEqual(len(window.source_file_checks), 2)
 
         window.close()
 
@@ -235,6 +264,29 @@ class DesktopTests(unittest.TestCase):
         analyze_logs.assert_called_once_with(standalone, None)
         self.assertEqual(window.standalone_paths, standalone)
         self.assertEqual(window.analysis_history[-1].paths, standalone)
+
+        window.close()
+
+    def test_standalone_log_dialog_selects_multiple_files_together(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "auth.log"
+            second = root / "app.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+
+            with patch(
+                "logcheck.desktop.QFileDialog.getOpenFileNames",
+                return_value=([str(first), str(second)], ""),
+            ):
+                window.choose_logs()
+
+            self.assertEqual(window.standalone_paths, [first, second])
+            self.assertEqual(window.selected_paths, [first, second])
+            self.assertIn("auth.log", window.logs_label.text())
+            self.assertIn("app.log", window.logs_label.text())
 
         window.close()
 
@@ -412,15 +464,88 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
-    def test_overview_export_controls_are_separate_from_detail_scroll(self):
+    def test_overview_renders_analysis_insight_summary(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(
+            events=[Event("auth.log", 1, "Failed password", source_address="192.0.2.10")],
+            findings=[
+                Finding(
+                    rule_id="keyword.failed_login",
+                    severity="medium",
+                    explanation="Failed login",
+                    evidence=["Failed password"],
+                    source_address="192.0.2.10",
+                )
+            ],
+        )
+        result.insights = generate_insights(result)
+
+        window._render_result(result)
+
+        self.assertIn(result.insights.risk_level, window.insight_summary_label.text())
+        self.assertIn("192.0.2.10", window.insight_summary_label.text())
+
+        window.close()
+
+    def test_overview_does_not_duplicate_export_button(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
-        detail_buttons = window.detail_scroll.widget().findChildren(QPushButton)
+        overview_buttons = window.section_widgets["nav_overview"].findChildren(QPushButton)
+        export_buttons = window.section_widgets["nav_export"].findChildren(QPushButton)
 
-        self.assertNotIn(window.export_button, detail_buttons)
-        self.assertEqual(window.export_button.text(), desktop.UI_TEXT["export"])
-        self.assertTrue(window.export_button.isEnabled())
+        self.assertNotIn(desktop.UI_TEXT["export"], [button.text() for button in overview_buttons])
+        self.assertIn(desktop.UI_TEXT["export"], [button.text() for button in export_buttons])
+
+        window.close()
+
+    def test_sidebar_does_not_show_settings_shortcut_label(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        visible_labels = [label.text() for label in window.findChildren(QLabel)]
+
+        self.assertNotIn(desktop.UI_TEXT["settings"], visible_labels)
+
+        window.close()
+
+    def test_stylesheet_preserves_panel_scroll_and_row_surfaces(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        stylesheet = window.styleSheet()
+
+        self.assertIn("QFrame#panel", stylesheet)
+        self.assertIn("QScrollArea", stylesheet)
+        self.assertIn("QFrame#row", stylesheet)
+        self.assertIn(f"QFrame#row {{ background: {desktop.PANEL_2};", stylesheet)
+
+        window.close()
+
+    def test_sources_action_uses_concise_file_button_text(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        buttons = window.section_widgets["nav_sources"].findChildren(QPushButton)
+        button_texts = [button.text() for button in buttons]
+
+        self.assertIn("选择日志文件", button_texts)
+        self.assertNotIn("选择单独日志文件", button_texts)
+
+        window.close()
+
+    def test_visible_ui_omits_remote_or_destructive_controls(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        visible_text = " ".join(
+            [button.text() for button in window.findChildren(QPushButton)]
+            + [label.text() for label in window.findChildren(QLabel)]
+        )
+
+        for forbidden in ["URL", "域名", "上传", "扫描", "封禁", "利用"]:
+            self.assertNotIn(forbidden, visible_text)
 
         window.close()
 

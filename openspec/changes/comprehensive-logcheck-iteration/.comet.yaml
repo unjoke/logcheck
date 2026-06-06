@@ -14,5 +14,5 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/comprehensive-logcheck-iteration/.comet/handoff/design-context.json
 handoff_hash: 913f8000d10fc276390b962cf30abe019b2b5e5aba44d69c31132d35a0b04c2d
-build_command: python -m unittest discover
-verify_command: python -m unittest discover
+build_command: python.exe -m unittest discover
+verify_command: python.exe -m unittest discover

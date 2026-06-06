@@ -67,11 +67,15 @@ class ExporterTests(unittest.TestCase):
             self.assertIn("keyword.failed_login,medium", text)
 
     def test_export_markdown_writes_summary(self):
+        result = sample_result()
+        result.rule_source = "rules.json"
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "report.md"
-            export_markdown(sample_result(), path)
+            export_markdown(result, path)
             text = path.read_text(encoding="utf-8")
             self.assertIn("# Log Intrusion Analysis Report", text)
+            self.assertIn("- Analyzed sources: auth.log", text)
+            self.assertIn("- Active rule source: rules.json", text)
             self.assertIn("keyword.failed_login", text)
 
     def test_export_markdown_includes_insight_section(self):

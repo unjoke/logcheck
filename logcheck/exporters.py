@@ -79,6 +79,8 @@ def export_markdown(result: AnalysisResult, path: Path) -> None:
         f"- Total events: {meta['total_events']}",
         f"- Total findings: {meta['total_findings']}",
         f"- Findings by severity: {meta['findings_by_severity']}",
+        f"- Analyzed sources: {', '.join(meta['analyzed_sources']) or 'none'}",
+        f"- Active rule source: {meta['active_rule_source'] or 'default'}",
         "",
     ]
     if result.insights is not None:

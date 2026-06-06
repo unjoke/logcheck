@@ -22,10 +22,10 @@
 
 ## 4. Report Export Iteration
 
-- [ ] 4.1 Add exporter tests for source context metadata, JSON insight payloads, Markdown insight sections, and compatibility of existing fields.
-- [ ] 4.2 Extend JSON export with source context, insight summary, entity profiles, timeline highlights, and suggestions.
-- [ ] 4.3 Extend Markdown export with readable insight and investigation sections.
-- [ ] 4.4 Keep CSV finding-level output compatible while documenting any added columns.
+- [x] 4.1 Add exporter tests for source context metadata, JSON insight payloads, Markdown insight sections, and compatibility of existing fields.
+- [x] 4.2 Extend JSON export with source context, insight summary, entity profiles, timeline highlights, and suggestions.
+- [x] 4.3 Extend Markdown export with readable insight and investigation sections.
+- [x] 4.4 Keep CSV finding-level output compatible while documenting any added columns.
 
 ## 5. Verification and Deliverables
 

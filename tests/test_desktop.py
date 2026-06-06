@@ -61,6 +61,21 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_first_screen_exposes_investigation_workbench_regions(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        self.assertIsNotNone(window.findChild(QLabel, "sourcePaneTitle"))
+        self.assertIsNotNone(window.findChild(QLabel, "logViewerPaneTitle"))
+        self.assertIsNotNone(window.findChild(QLabel, "ruleContextPaneTitle"))
+        self.assertIsNotNone(window.findChild(QLabel, "outputPaneTitle"))
+        self.assertTrue(hasattr(window, "source_pane"))
+        self.assertTrue(hasattr(window, "log_viewer_pane"))
+        self.assertTrue(hasattr(window, "rule_context_pane"))
+        self.assertTrue(hasattr(window, "output_pane"))
+
+        window.close()
+
     def test_sidebar_navigation_buttons_are_clickable(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
@@ -622,7 +637,7 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
-    def test_visible_ui_omits_remote_or_destructive_controls(self):
+    def test_workbench_omits_remote_or_destructive_controls(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
@@ -631,7 +646,7 @@ class DesktopTests(unittest.TestCase):
             + [label.text() for label in window.findChildren(QLabel)]
         )
 
-        for forbidden in ["URL", "域名", "上传", "扫描", "封禁", "利用"]:
+        for forbidden in ["URL", "域名", "上传", "扫描", "封禁", "利用", "远程"]:
             self.assertNotIn(forbidden, visible_text)
 
         window.close()

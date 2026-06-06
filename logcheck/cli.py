@@ -31,6 +31,8 @@ def _print_summary(result: AnalysisResult) -> None:
     print(f"Findings: {summary.total_findings}")
     print(f"Severity counts: {summary.findings_by_severity}")
     print(f"Top suspicious sources: {summary.top_suspicious_sources}")
+    if result.insights is not None:
+        print(f"Insight: {result.insights.headline}")
 
 
 def main(argv: list[str] | None = None) -> int:

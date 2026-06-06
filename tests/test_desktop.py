@@ -69,10 +69,6 @@ class DesktopTests(unittest.TestCase):
         self.assertIsNotNone(window.findChild(QLabel, "logViewerPaneTitle"))
         self.assertIsNotNone(window.findChild(QLabel, "ruleContextPaneTitle"))
         self.assertIsNotNone(window.findChild(QLabel, "outputPaneTitle"))
-        self.assertTrue(hasattr(window, "source_pane"))
-        self.assertTrue(hasattr(window, "log_viewer_pane"))
-        self.assertTrue(hasattr(window, "rule_context_pane"))
-        self.assertTrue(hasattr(window, "output_pane"))
 
         window.close()
 

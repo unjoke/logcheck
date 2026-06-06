@@ -29,7 +29,7 @@
 
 ## 5. Verification and Deliverables
 
-- [ ] 5.1 Run parser, rules, analysis, exporter, CLI, and desktop test suites.
-- [ ] 5.2 Perform manual desktop visual verification at initial and minimum window sizes.
-- [ ] 5.3 Capture local-only safety evidence showing no remote target, upload, scanning, blocking, exploitation, or external reporting controls.
-- [ ] 5.4 Update course deliverable notes or screenshots if required by the final packaging workflow.
+- [x] 5.1 Run parser, rules, analysis, exporter, CLI, and desktop test suites.
+- [x] 5.2 Perform manual desktop visual verification at initial and minimum window sizes.
+- [x] 5.3 Capture local-only safety evidence showing no remote target, upload, scanning, blocking, exploitation, or external reporting controls.
+- [x] 5.4 Update course deliverable notes or screenshots if required by the final packaging workflow.

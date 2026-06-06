@@ -139,6 +139,7 @@ class LogcheckDesktop(QMainWindow):
         super().__init__()
         self.selected_paths: list[Path] = []
         self.source_folder: Path | None = None
+        self.source_folders: list[Path] = []
         self.source_files: list[Path] = []
         self.selected_source_paths: list[Path] = []
         self.standalone_paths: list[Path] = []
@@ -588,6 +589,9 @@ class LogcheckDesktop(QMainWindow):
             return
         self.standalone_paths = paths
         self.selected_paths = paths
+        self.source_folder = None
+        self.source_folders = []
+        self.source_files = []
         self.selected_source_paths = []
         self.logs_label.setText("\n".join(path.name for path in self.selected_paths))
         self.sources_section_label.setText("\n".join(str(path) for path in self.selected_paths))

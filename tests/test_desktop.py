@@ -53,6 +53,14 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_new_window_starts_with_empty_source_folders(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        self.assertEqual(window.source_folders, [])
+
+        window.close()
+
     def test_sidebar_navigation_buttons_are_clickable(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
@@ -275,6 +283,28 @@ class DesktopTests(unittest.TestCase):
         analyze_logs.assert_called_once_with(standalone, None)
         self.assertEqual(window.standalone_paths, standalone)
         self.assertEqual(window.analysis_history[-1].paths, standalone)
+
+        window.close()
+
+    def test_standalone_logs_clear_previous_source_folder_state(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_file = root / "source.log"
+            standalone = root / "standalone.log"
+            source_file.write_text("source", encoding="utf-8")
+            standalone.write_text("standalone", encoding="utf-8")
+            window.set_log_source_folder(root)
+
+            with patch.object(window, "choose_standalone_logs", return_value=[standalone]):
+                window.choose_logs()
+
+            self.assertIsNone(window.source_folder)
+            self.assertEqual(window.source_folders, [])
+            self.assertEqual(window.source_files, [])
+            self.assertEqual(window.standalone_paths, [standalone])
+            self.assertEqual(window.selected_paths, [standalone])
 
         window.close()
 

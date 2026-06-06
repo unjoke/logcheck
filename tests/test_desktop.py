@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QCheckBox, QComboBox, QLabel, QPushButton, QScrollArea
 
 from logcheck import desktop
-from logcheck.insights import generate_insights
+from logcheck.insights import EntityProfile, generate_insights
 from logcheck.models import AnalysisResult, Event, Finding
 
 
@@ -122,20 +122,31 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
-    def test_source_folder_dialog_loads_folder_files(self):
+    def test_source_folder_dialog_loads_multiple_folder_files(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
         with TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            log_file = root / "auth.log"
-            log_file.write_text("auth", encoding="utf-8")
+            base = Path(tmp)
+            first_root = base / "one"
+            second_root = base / "two"
+            first_root.mkdir()
+            second_root.mkdir()
+            first = first_root / "auth.log"
+            second = second_root / "app.log"
+            nested = second_root / "archive"
+            nested.mkdir()
+            nested_file = nested / "old.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+            nested_file.write_text("old", encoding="utf-8")
 
-            with patch("logcheck.desktop.QFileDialog.getExistingDirectory", return_value=tmp):
+            with patch.object(window, "choose_source_folders", return_value=[first_root, second_root]):
                 window.choose_source_folder()
 
-            self.assertEqual(window.source_folder, root)
-            self.assertEqual(window.selected_source_paths, [log_file])
-            self.assertIn("1", window.sources_section_label.text())
+            self.assertIsNone(window.source_folder)
+            self.assertEqual(window.selected_source_paths, [first, second])
+            self.assertIn("2", window.sources_section_label.text())
+            self.assertNotIn("old.log", window.sources_section_label.text())
 
         window.close()
 
@@ -485,6 +496,52 @@ class DesktopTests(unittest.TestCase):
 
         self.assertIn(result.insights.risk_level, window.insight_summary_label.text())
         self.assertIn("192.0.2.10", window.insight_summary_label.text())
+
+        window.close()
+
+    def test_suspicious_sources_render_entity_profiles_with_evidence(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(
+            events=[Event("auth.log", 1, "Failed password", source_address="192.0.2.10")],
+            findings=[
+                Finding(
+                    rule_id="keyword.failed_login",
+                    severity="high",
+                    explanation="Failed login",
+                    evidence=["Failed password for root from 192.0.2.10"],
+                    source_address="192.0.2.10",
+                )
+            ],
+        )
+        result.insights = type(
+            "Insights",
+            (),
+            {
+                "risk_level": "high",
+                "headline": "1 suspicious source requires review.",
+                "evidence_count": 1,
+                "entity_profiles": [
+                    EntityProfile(
+                        kind="source_address",
+                        value="192.0.2.10",
+                        finding_count=1,
+                        severity_counts={"high": 1},
+                        related_rules=["keyword.failed_login"],
+                        evidence=["Failed password for root from 192.0.2.10"],
+                    )
+                ],
+            },
+        )()
+
+        window._render_result(result)
+
+        text = window.suspicious_sources_label.text()
+        self.assertIn("192.0.2.10", text)
+        self.assertIn("source_address", text)
+        self.assertIn("high", text)
+        self.assertIn("keyword.failed_login", text)
+        self.assertIn("Failed password for root", text)
 
         window.close()
 

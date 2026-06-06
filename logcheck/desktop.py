@@ -10,6 +10,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QApplication,
+    QAbstractItemView,
     QCheckBox,
     QComboBox,
     QFileDialog,
@@ -17,11 +18,13 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QListView,
     QMainWindow,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
+    QTreeView,
     QVBoxLayout,
     QWidget,
 )
@@ -592,21 +595,23 @@ class LogcheckDesktop(QMainWindow):
         self.status_label.setText(f"\u5df2\u9009\u62e9 {len(self.selected_paths)} \u4e2a\u672c\u5730\u65e5\u5fd7\u6587\u4ef6\u3002")
 
     def choose_source_folder(self) -> None:
-        selected = QFileDialog.getExistingDirectory(self, "\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
+        selected = self.choose_source_folders()
         if not selected:
             self.status_label.setText("\u5df2\u53d6\u6d88\u65e5\u5fd7\u6e90\u9009\u62e9\u3002")
             return
-        self.set_log_source_folder(Path(selected))
+        self.set_log_source_folders(selected)
 
-    def choose_source_folders(self) -> None:
+    def choose_source_folders(self) -> list[Path]:
         dialog = QFileDialog(self, "\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
         dialog.setFileMode(QFileDialog.FileMode.Directory)
         dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        for view_type in (QListView, QTreeView):
+            for view in dialog.findChildren(view_type):
+                view.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         if not dialog.exec():
-            self.status_label.setText("\u5df2\u53d6\u6d88\u65e5\u5fd7\u6e90\u9009\u62e9\u3002")
-            return
-        self.set_log_source_folders([Path(path) for path in dialog.selectedFiles()])
+            return []
+        return [Path(path) for path in dialog.selectedFiles()]
 
     def choose_standalone_logs(self) -> list[Path]:
         paths, _selected_filter = QFileDialog.getOpenFileNames(self, "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u6587\u4ef6")
@@ -619,6 +624,7 @@ class LogcheckDesktop(QMainWindow):
         self.set_log_source_folders([folder])
 
     def set_log_source_folders(self, folders: list[Path]) -> None:
+        self.source_folders = list(folders)
         self.source_folder = folders[0] if len(folders) == 1 else None
         self.source_files = [
             file_path
@@ -704,7 +710,7 @@ class LogcheckDesktop(QMainWindow):
         self.metric_labels["findings"].setText(str(summary.total_findings))
         self.metric_labels["high"].setText(str(high_count))
         self.metric_labels["sources"].setText(str(len(summary.top_suspicious_sources)))
-        self._refresh_suspicious_sources(summary.top_suspicious_sources)
+        self._refresh_suspicious_sources(summary.top_suspicious_sources, result)
         self._refresh_insight_summary(result)
         self._render_findings(result.findings)
 
@@ -720,7 +726,29 @@ class LogcheckDesktop(QMainWindow):
             f"\u8bc1\u636e\uff1a{insights.evidence_count} \u6761"
         )
 
-    def _refresh_suspicious_sources(self, sources: list[tuple[str, int]]) -> None:
+    def _refresh_suspicious_sources(self, sources: list[tuple[str, int]], result: AnalysisResult | None = None) -> None:
+        insights = getattr(result, "insights", None) if result is not None else None
+        if insights is None and result is not None:
+            insights = generate_insights(result)
+        profiles = getattr(insights, "entity_profiles", []) if insights is not None else []
+        if profiles:
+            lines = []
+            for profile in profiles:
+                severity_text = ", ".join(
+                    f"{severity}:{count}" for severity, count in profile.severity_counts.items()
+                )
+                rule_text = ", ".join(profile.related_rules)
+                lines.append(
+                    f"{profile.value} ({profile.kind}) - {profile.finding_count} findings"
+                )
+                if severity_text:
+                    lines.append(f"  severities: {severity_text}")
+                if rule_text:
+                    lines.append(f"  rules: {rule_text}")
+                if profile.evidence:
+                    lines.append(f"  evidence: {profile.evidence[0]}")
+            self.suspicious_sources_label.setText("\n".join(lines))
+            return
         if not sources:
             self.suspicious_sources_label.setText("\u672a\u68c0\u6d4b\u5230\u53ef\u7591\u6765\u6e90\u3002")
             return

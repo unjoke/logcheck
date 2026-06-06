@@ -11,11 +11,17 @@ from .models import AnalysisResult
 
 def _metadata(result: AnalysisResult) -> dict[str, object]:
     severities = Counter(finding.severity for finding in result.findings)
+    analyzed_sources = sorted(
+        {event.source_file for event in result.events if event.source_file}
+        or {finding.source_file for finding in result.findings if finding.source_file}
+    )
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_events": len(result.events),
         "total_findings": len(result.findings),
         "findings_by_severity": dict(severities),
+        "analyzed_sources": analyzed_sources,
+        "active_rule_source": getattr(result, "rule_source", None),
     }
 
 
@@ -94,6 +100,7 @@ def export_markdown(result: AnalysisResult, path: Path) -> None:
                     f"- {profile.kind} `{profile.value}`: {profile.finding_count} findings, "
                     f"severities {profile.severity_counts}, rules {', '.join(profile.related_rules)}"
                 )
+                lines.extend(f"  - Evidence: `{line}`" for line in profile.evidence)
             lines.append("")
         if insights.timeline:
             lines.extend(["### Timeline", ""])
@@ -104,6 +111,7 @@ def export_markdown(result: AnalysisResult, path: Path) -> None:
             lines.extend(["### Suggestions", ""])
             for suggestion in insights.suggestions:
                 lines.append(f"- {suggestion.title}: {suggestion.detail}")
+                lines.extend(f"  - Evidence: `{line}`" for line in suggestion.evidence)
             lines.append("")
     lines.extend(
         [

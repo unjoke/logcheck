@@ -34,6 +34,18 @@ class ExporterTests(unittest.TestCase):
             self.assertEqual(data["total_events"], 1)
             self.assertEqual(data["findings"][0]["rule_id"], "keyword.failed_login")
 
+    def test_export_json_includes_source_context_metadata(self):
+        result = sample_result()
+        result.rule_source = "rules/custom.yml"
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.json"
+
+            export_json(result, path)
+
+            data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(data["analyzed_sources"], ["auth.log"])
+        self.assertEqual(data["active_rule_source"], "rules/custom.yml")
+
     def test_export_json_includes_insights_when_available(self):
         result = sample_result()
         result.insights = generate_insights(result)
@@ -73,6 +85,18 @@ class ExporterTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
         self.assertIn("## Investigation Insights", text)
         self.assertIn(result.insights.headline, text)
+
+    def test_export_markdown_includes_insight_evidence(self):
+        result = sample_result()
+        result.insights = generate_insights(result)
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "analysis.md"
+
+            export_markdown(result, path)
+
+            text = path.read_text(encoding="utf-8")
+        insights_section = text.split("## Investigation Insights", 1)[1].split("## Findings", 1)[0]
+        self.assertIn("Failed password", insights_section)
 
 
 if __name__ == "__main__":

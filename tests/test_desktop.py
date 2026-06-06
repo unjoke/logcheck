@@ -646,7 +646,7 @@ class DesktopTests(unittest.TestCase):
             + [label.text() for label in window.findChildren(QLabel)]
         )
 
-        for forbidden in ["URL", "域名", "上传", "扫描", "封禁", "利用", "远程"]:
+        for forbidden in ["URL", "域名", "上传", "扫描", "封禁", "利用", "远程", "report", "外部", "上报", "报送"]:
             self.assertNotIn(forbidden, visible_text)
 
         window.close()

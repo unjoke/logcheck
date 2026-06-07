@@ -3,8 +3,8 @@ phase: build
 build_mode: subagent-driven-development
 isolation: worktree
 verify_mode: full
-build_command: python -m pytest tests -q
-verify_command: python -m pytest tests -q
+build_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q
+verify_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q
 base_ref: f9a1d1b18623222f2c000a5ade464f3304c0e82b
 design_doc: docs/superpowers/specs/2026-06-07-rebuild-web-frontend-technical-design.md
 plan: docs/superpowers/plans/2026-06-07-rebuild-web-frontend.md

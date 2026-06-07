@@ -100,3 +100,55 @@ def test_export_json_after_analysis(tmp_path):
     assert response.status_code == 200
     assert response.mimetype == "application/json"
     assert b"findings" in response.data
+
+
+def test_failed_analysis_clears_previous_export_result(tmp_path):
+    client = make_app(tmp_path)
+    client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
+
+    failure = client.post("/api/analyze", data={}, content_type="multipart/form-data")
+    export = client.get("/api/exports/json")
+
+    assert failure.status_code == 400
+    assert export.status_code == 400
+    assert "analysis must run" in export.get_json()["error"].lower()
+
+
+def test_analyze_rejects_more_than_configured_uploaded_files(tmp_path):
+    client = make_app(tmp_path)
+    client.application.config["MAX_UPLOAD_FILES"] = 1
+
+    response = client.post(
+        "/api/analyze",
+        data={
+            "files": [
+                (BytesIO(b"first failed password line\n"), "first.log"),
+                (BytesIO(b"second failed password line\n"), "second.log"),
+            ]
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert "too many" in response.get_json()["error"].lower()
+
+
+def test_uploaded_files_are_cleaned_after_analysis(tmp_path):
+    upload_dir = tmp_path / "uploads"
+    client = create_app(sample_dir=tmp_path / "samples", upload_dir=upload_dir).test_client()
+
+    response = client.post(
+        "/api/analyze",
+        data={
+            "files": (
+                BytesIO(
+                    b"Jun  1 10:00:00 host sshd[1]: Failed password for admin from 192.0.2.11 port 22 ssh2\n"
+                ),
+                "upload.log",
+            )
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert not list(upload_dir.glob("*upload.log"))

@@ -17,6 +17,8 @@ EXPORTERS = {
     "csv": ("analysis.csv", "text/csv", export_csv),
     "markdown": ("analysis.md", "text/markdown", export_markdown),
 }
+DEFAULT_MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+DEFAULT_MAX_UPLOAD_FILES = 8
 
 
 def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -> Flask:
@@ -25,6 +27,8 @@ def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -
     app.config["SAMPLE_DIR"] = sample_dir or Path("samples")
     app.config["UPLOAD_DIR"] = upload_dir or Path("worktmp") / "web_uploads"
     app.config["LATEST_RESULT"] = None
+    app.config["MAX_CONTENT_LENGTH"] = DEFAULT_MAX_CONTENT_LENGTH
+    app.config["MAX_UPLOAD_FILES"] = DEFAULT_MAX_UPLOAD_FILES
 
     @app.get("/")
     def index():
@@ -48,14 +52,21 @@ def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -
 
     @app.post("/api/analyze")
     def analyze():
+        app.config["LATEST_RESULT"] = None
+        uploads = [upload for upload in request.files.getlist("files") if upload.filename]
+        if len(uploads) > app.config["MAX_UPLOAD_FILES"]:
+            return jsonify({"error": "Too many uploaded local log files."}), 400
         paths = _selected_sample_paths(Path(app.config["SAMPLE_DIR"]), request.form.getlist("sample_ids"))
-        paths.extend(_save_uploads(Path(app.config["UPLOAD_DIR"])))
-        if not paths:
-            return jsonify({"error": "Select at least one local log file or sample log."}), 400
+        uploaded_paths = _save_uploads(Path(app.config["UPLOAD_DIR"]), uploads)
+        paths.extend(uploaded_paths)
         try:
+            if not paths:
+                return jsonify({"error": "Select at least one local log file or sample log."}), 400
             result = analyze_logs(paths)
         except (OSError, FileNotFoundError) as exc:
             return jsonify({"error": f"Could not analyze local input: {exc}"}), 400
+        finally:
+            _cleanup_uploads(uploaded_paths)
         app.config["LATEST_RESULT"] = result
         return jsonify(serialize_result(result))
 
@@ -85,12 +96,10 @@ def _selected_sample_paths(sample_dir: Path, sample_ids: list[str]) -> list[Path
     return paths
 
 
-def _save_uploads(upload_dir: Path) -> list[Path]:
+def _save_uploads(upload_dir: Path, uploads: list[object]) -> list[Path]:
     upload_dir.mkdir(parents=True, exist_ok=True)
     paths = []
-    for upload in request.files.getlist("files"):
-        if not upload.filename:
-            continue
+    for upload in uploads:
         filename = secure_filename(upload.filename)
         if not filename:
             continue
@@ -98,6 +107,14 @@ def _save_uploads(upload_dir: Path) -> list[Path]:
         upload.save(path)
         paths.append(path)
     return paths
+
+
+def _cleanup_uploads(paths: list[Path]) -> None:
+    for path in paths:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            continue
 
 
 def main() -> None:

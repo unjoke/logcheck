@@ -93,8 +93,8 @@ def test_dashboard_script_includes_evidence_source_context_fields():
 def test_dashboard_script_uses_ascii_separators():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
-    assert "·" not in script
-    assert "路" not in script
+    assert "\u00b7" not in script
+    assert "\u8def" not in script
 
 
 def test_analyze_uploaded_file(tmp_path):

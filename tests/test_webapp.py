@@ -97,6 +97,13 @@ def test_dashboard_script_uses_ascii_separators():
     assert "\u8def" not in script
 
 
+def test_dashboard_script_does_not_fetch_external_inputs():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "http://" not in script
+    assert "https://" not in script
+
+
 def test_analyze_uploaded_file(tmp_path):
     client = make_app(tmp_path)
 
@@ -136,6 +143,21 @@ def test_analyze_sample_and_uploaded_file_together(tmp_path):
     assert response.get_json()["summary"]["total_events"] >= 2
 
 
+def test_analyze_ignores_unknown_sample_id_while_valid_sample_runs(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.post(
+        "/api/analyze",
+        data={"sample_ids": ["missing.log", "auth.log"]},
+        content_type="multipart/form-data",
+    )
+
+    payload = response.get_json()
+    assert response.status_code == 200
+    assert payload["summary"]["total_events"] == 1
+    assert payload["events"][0]["source_file"].endswith("auth.log")
+
+
 def test_analyze_requires_local_input(tmp_path):
     client = make_app(tmp_path)
 
@@ -164,6 +186,30 @@ def test_export_json_after_analysis(tmp_path):
     assert response.status_code == 200
     assert response.mimetype == "application/json"
     assert b"findings" in response.data
+
+
+def test_export_csv_after_analysis_with_analysis_id(tmp_path):
+    client = make_app(tmp_path)
+    analyze = client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/csv?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    assert "rule_id,severity" in response.get_data(as_text=True)
+
+
+def test_export_markdown_after_analysis_with_analysis_id(tmp_path):
+    client = make_app(tmp_path)
+    analyze = client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/markdown?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/markdown"
+    assert "Log Intrusion Analysis Report" in response.get_data(as_text=True)
 
 
 def test_export_requires_analysis_id_after_analysis(tmp_path):

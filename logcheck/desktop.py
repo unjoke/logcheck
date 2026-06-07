@@ -347,17 +347,38 @@ class LogcheckDesktop(QMainWindow):
 
     def _workbench_source_pane(self) -> QFrame:
         pane = QFrame()
+        self.source_pane = pane
         pane.setObjectName("panel")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
         box.addWidget(self._pane_title("source_pane", "sourcePaneTitle"))
-        box.addWidget(self._label(UI_TEXT["no_logs"], "normal", MUTED))
-        box.addStretch(1)
+
+        actions = QHBoxLayout()
+        folder_button = QPushButton("\u9009\u62e9\u65e5\u5fd7\u6e90\u6587\u4ef6\u5939")
+        folder_button.clicked.connect(self.choose_source_folder)
+        standalone_button = QPushButton("\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6")
+        standalone_button.clicked.connect(self.choose_logs)
+        actions.addWidget(folder_button)
+        actions.addWidget(standalone_button)
+        box.addLayout(actions)
+
+        self.sources_section_label = self._label("\u5f53\u524d\u672a\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6\u3002", "normal", MUTED)
+        box.addWidget(self.sources_section_label)
+        self.source_file_list = QWidget()
+        self.source_file_list_layout = QVBoxLayout(self.source_file_list)
+        self.source_file_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.source_file_list_layout.setSpacing(6)
+        self.source_file_list_layout.addStretch(1)
+        source_scroll = QScrollArea()
+        source_scroll.setWidgetResizable(True)
+        source_scroll.setWidget(self.source_file_list)
+        box.addWidget(source_scroll, 1)
         return pane
 
     def _workbench_log_viewer_pane(self) -> QFrame:
         pane = QFrame()
+        self.log_viewer_pane = pane
         pane.setObjectName("panel")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
@@ -369,17 +390,28 @@ class LogcheckDesktop(QMainWindow):
 
     def _workbench_rule_context_pane(self) -> QFrame:
         pane = QFrame()
+        self.rule_context_pane = pane
         pane.setObjectName("panel")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
         box.addWidget(self._pane_title("rule_context_pane", "ruleContextPaneTitle"))
-        box.addWidget(self._label(self._format_rules_text(), "small", MUTED))
+        actions = QHBoxLayout()
+        import_button = QPushButton("\u5bfc\u5165\u89c4\u5219\u6587\u4ef6")
+        import_button.clicked.connect(self.import_rule_file)
+        save_button = QPushButton("\u4fdd\u5b58\u5f53\u524d\u89c4\u5219")
+        save_button.clicked.connect(self.save_active_rule_file)
+        actions.addWidget(import_button)
+        actions.addWidget(save_button)
+        box.addLayout(actions)
+        self.rules_section_label = self._label(self._format_rules_text(), "small", MUTED)
+        box.addWidget(self.rules_section_label)
         box.addStretch(1)
         return pane
 
     def _workbench_output_pane(self) -> QFrame:
         pane = QFrame()
+        self.output_pane = pane
         pane.setObjectName("panel")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
@@ -437,18 +469,12 @@ class LogcheckDesktop(QMainWindow):
         panel_box = QVBoxLayout(panel)
         panel_box.setContentsMargins(20, 18, 20, 18)
         panel_box.setSpacing(10)
-        self.sources_section_label = self._label("\u5f53\u524d\u672a\u9009\u62e9\u65e5\u5fd7\u6587\u4ef6\u3002", "normal", MUTED)
-        panel_box.addWidget(self.sources_section_label)
-
-        self.source_file_list = QWidget()
-        self.source_file_list_layout = QVBoxLayout(self.source_file_list)
-        self.source_file_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.source_file_list_layout.setSpacing(6)
-        self.source_file_list_layout.addStretch(1)
-        source_scroll = QScrollArea()
-        source_scroll.setWidgetResizable(True)
-        source_scroll.setWidget(self.source_file_list)
-        panel_box.addWidget(source_scroll, 1)
+        self.legacy_sources_section_label = self._label(
+            "\u65e5\u5fd7\u6e90\u5df2\u79fb\u5230\u603b\u89c8\u8c03\u67e5\u5de5\u4f5c\u53f0\u5de6\u4fa7\u3002",
+            "normal",
+            MUTED,
+        )
+        panel_box.addWidget(self.legacy_sources_section_label)
         layout.addWidget(panel, 1)
         return section
 
@@ -477,8 +503,8 @@ class LogcheckDesktop(QMainWindow):
         panel_box = QVBoxLayout(panel)
         panel_box.setContentsMargins(20, 18, 20, 18)
         panel_box.setSpacing(10)
-        self.rules_section_label = self._label(self._format_rules_text(), "normal", MUTED)
-        panel_box.addWidget(self.rules_section_label)
+        self.legacy_rules_section_label = self._label(self._format_rules_text(), "normal", MUTED)
+        panel_box.addWidget(self.legacy_rules_section_label)
         panel_box.addStretch(1)
         layout.addWidget(panel, 1)
         return section
@@ -533,6 +559,8 @@ class LogcheckDesktop(QMainWindow):
 
     def _refresh_rules_section(self) -> None:
         self.rules_section_label.setText(self._format_rules_text())
+        if hasattr(self, "legacy_rules_section_label"):
+            self.legacy_rules_section_label.setText(self._format_rules_text())
 
     def import_rule_file(self) -> None:
         selected, _ = QFileDialog.getOpenFileName(
@@ -714,7 +742,8 @@ class LogcheckDesktop(QMainWindow):
         if not self.source_files:
             text = f"{folder_text}\n\u672a\u53d1\u73b0\u53ef\u7528\u65e5\u5fd7\u6587\u4ef6\u3002"
         else:
-            text = f"{folder_text}\n{len(self.source_files)} \u4e2a\u6587\u4ef6"
+            file_text = "\n".join(path.name for path in self.source_files)
+            text = f"{folder_text}\n{len(self.source_files)} \u4e2a\u6587\u4ef6\n{file_text}"
         self.sources_section_label.setText(text)
         self._refresh_source_file_checks()
         self.logs_label.setText("\n".join(path.name for path in self.selected_source_paths) or UI_TEXT["no_logs"])

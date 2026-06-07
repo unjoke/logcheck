@@ -480,9 +480,27 @@ class DesktopTests(unittest.TestCase):
 
             window.set_log_source_folder(root)
 
-            checks = window.section_widgets["nav_sources"].findChildren(QCheckBox)
+            checks = window.source_pane.findChildren(QCheckBox)
             self.assertEqual(len(checks), 1)
             self.assertEqual(checks[0].text(), "auth.log")
+
+        window.close()
+
+    def test_workbench_source_pane_updates_selected_sources(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = root / "auth.log"
+            second = root / "app.log"
+            first.write_text("auth", encoding="utf-8")
+            second.write_text("app", encoding="utf-8")
+
+            window.set_log_source_folder(root)
+
+            self.assertIn("auth.log", window.sources_section_label.text())
+            self.assertIn("app.log", window.sources_section_label.text())
+            self.assertEqual(len(window.source_file_checks), 2)
 
         window.close()
 

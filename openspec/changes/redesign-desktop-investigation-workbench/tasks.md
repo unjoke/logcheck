@@ -16,10 +16,10 @@
 ## 3. Interaction Wiring
 
 - [x] 3.1 Wire existing import-folder and import-file actions into the workbench source region.
-- [ ] 3.2 Wire existing analysis execution into the workbench top or source-adjacent action area.
+- [x] 3.2 Wire existing analysis execution into the workbench top or source-adjacent action area.
 - [x] 3.3 Refresh source counts, diagnostics, log viewer rows, findings, insights, history, and export availability after analysis completes.
 - [x] 3.4 Link finding selection to highlighted log evidence and detail content where parsed event data is available.
-- [ ] 3.5 Preserve existing JSON, CSV, and Markdown export behavior from the new bottom output region.
+- [x] 3.5 Preserve existing JSON, CSV, and Markdown export behavior from the new bottom output region.
 
 ## 4. Visual Polish And Responsiveness
 

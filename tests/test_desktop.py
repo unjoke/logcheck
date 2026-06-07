@@ -470,6 +470,15 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_workbench_output_region_contains_local_export_action(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+
+        output_buttons = window.output_pane.findChildren(QPushButton)
+        self.assertIn(desktop.UI_TEXT["export"], [button.text() for button in output_buttons])
+
+        window.close()
+
     def test_source_section_renders_file_checkboxes(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
@@ -640,15 +649,15 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
-    def test_overview_does_not_duplicate_export_button(self):
+    def test_export_button_lives_in_workbench_output_region(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
-        overview_buttons = window.section_widgets["nav_overview"].findChildren(QPushButton)
+        output_buttons = window.output_pane.findChildren(QPushButton)
         export_buttons = window.section_widgets["nav_export"].findChildren(QPushButton)
 
-        self.assertNotIn(desktop.UI_TEXT["export"], [button.text() for button in overview_buttons])
-        self.assertIn(desktop.UI_TEXT["export"], [button.text() for button in export_buttons])
+        self.assertIn(desktop.UI_TEXT["export"], [button.text() for button in output_buttons])
+        self.assertNotIn(desktop.UI_TEXT["export"], [button.text() for button in export_buttons])
 
         window.close()
 

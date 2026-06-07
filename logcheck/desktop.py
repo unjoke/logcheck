@@ -430,6 +430,23 @@ class LogcheckDesktop(QMainWindow):
         content.setSpacing(12)
         content.addWidget(self._finding_panel(), 1)
         content.addWidget(self._details_panel())
+        history_panel = QFrame()
+        history_panel.setObjectName("panel")
+        history_panel.setFixedWidth(300)
+        history_box = QVBoxLayout(history_panel)
+        history_box.setContentsMargins(12, 10, 12, 10)
+        history_box.setSpacing(8)
+        history_box.addWidget(self._label(UI_TEXT["analysis_history"], "bold", bold=True))
+        self.export_history_combo = QComboBox()
+        self.export_history_combo.currentIndexChanged.connect(self._select_history_index)
+        history_box.addWidget(self.export_history_combo)
+        export_button = QPushButton(UI_TEXT["export"])
+        export_button.setObjectName("primary")
+        export_button.clicked.connect(self.export_reports)
+        history_box.addWidget(export_button)
+        self.export_history_label = self._label("\u5c1a\u65e0\u53ef\u5bfc\u51fa\u7684\u5206\u6790\u5386\u53f2\u3002", "small", MUTED)
+        history_box.addWidget(self.export_history_label, 1)
+        content.addWidget(history_panel)
         box.addLayout(content, 1)
         return pane
 
@@ -541,15 +558,13 @@ class LogcheckDesktop(QMainWindow):
         panel_box = QVBoxLayout(panel)
         panel_box.setContentsMargins(20, 18, 20, 18)
         panel_box.setSpacing(12)
-        self.export_history_combo = QComboBox()
-        self.export_history_combo.currentIndexChanged.connect(self._select_history_index)
-        panel_box.addWidget(self.export_history_combo)
-        export_button = QPushButton(UI_TEXT["export"])
-        export_button.setObjectName("primary")
-        export_button.clicked.connect(self.export_reports)
-        panel_box.addWidget(export_button)
-        self.export_history_label = self._label("\u5c1a\u65e0\u53ef\u5bfc\u51fa\u7684\u5206\u6790\u5386\u53f2\u3002", "normal", MUTED)
-        panel_box.addWidget(self.export_history_label)
+        panel_box.addWidget(
+            self._label(
+                "\u5386\u53f2\u548c\u5bfc\u51fa\u5df2\u79fb\u5230\u603b\u89c8\u8c03\u67e5\u5de5\u4f5c\u53f0\u5e95\u90e8\u3002",
+                "normal",
+                MUTED,
+            )
+        )
         panel_box.addStretch(1)
         layout.addWidget(panel, 1)
         return section

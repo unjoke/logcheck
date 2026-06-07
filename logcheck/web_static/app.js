@@ -217,7 +217,8 @@ function normalizeInsights(insights) {
     items.push(`${suggestion.title}: ${suggestion.detail}`);
   }
   for (const item of insights.timeline || []) {
-    items.push(`${item.label || item.timestamp}: ${item.detail || item.summary}`);
+    const context = [item.severity, item.rule_id, item.entity, item.source].filter(Boolean).join(" | ");
+    items.push(context ? `${item.label || item.timestamp}: ${context}` : item.label || item.timestamp);
   }
   return items.filter(Boolean);
 }

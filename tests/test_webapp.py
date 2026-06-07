@@ -98,6 +98,15 @@ def test_dashboard_script_uses_ascii_separators():
     assert "\u8def" not in script
 
 
+def test_dashboard_script_uses_actual_timeline_fields():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "item.detail" not in script
+    assert "item.summary" not in script
+    for field in ["item.severity", "item.rule_id", "item.entity", "item.source"]:
+        assert field in script
+
+
 def test_dashboard_script_fetches_only_local_api_inputs():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 

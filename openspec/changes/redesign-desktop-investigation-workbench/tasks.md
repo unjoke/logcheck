@@ -3,22 +3,22 @@
 - [x] 1.1 Add or update desktop tests that assert the first screen exposes the workbench regions: local sources, log viewer, rule/context panel, and findings/evidence/history area.
 - [x] 1.2 Add desktop tests that assert remote controls are absent, including URL inputs, domain inputs, remote upload controls, network scan buttons, blocking controls, exploitation actions, and external reporting controls.
 - [x] 1.3 Add tests for source diagnostics remaining visible while readable files stay analyzable.
-- [ ] 1.4 Add tests for finding selection driving evidence detail in the workbench output area.
+- [x] 1.4 Add tests for finding selection driving evidence detail in the workbench output area.
 
 ## 2. Workbench Shell
 
 - [x] 2.1 Replace the current primary desktop shell composition with a workbench layout using stable left, center, right, and bottom regions.
 - [x] 2.2 Move source selection, selected source state, and source diagnostics into the left source region.
-- [ ] 2.3 Add the central log viewer surface with stable row styling, empty state, and room for highlighted finding rows.
+- [x] 2.3 Add the central log viewer surface with stable row styling, empty state, and room for highlighted finding rows.
 - [x] 2.4 Move local rule status, rule file state, and local threshold/context controls into the right region.
-- [ ] 2.5 Move findings, selected evidence detail, analysis history, and local export actions into the bottom output region.
+- [x] 2.5 Move findings, selected evidence detail, analysis history, and local export actions into the bottom output region.
 
 ## 3. Interaction Wiring
 
 - [x] 3.1 Wire existing import-folder and import-file actions into the workbench source region.
 - [ ] 3.2 Wire existing analysis execution into the workbench top or source-adjacent action area.
-- [ ] 3.3 Refresh source counts, diagnostics, log viewer rows, findings, insights, history, and export availability after analysis completes.
-- [ ] 3.4 Link finding selection to highlighted log evidence and detail content where parsed event data is available.
+- [x] 3.3 Refresh source counts, diagnostics, log viewer rows, findings, insights, history, and export availability after analysis completes.
+- [x] 3.4 Link finding selection to highlighted log evidence and detail content where parsed event data is available.
 - [ ] 3.5 Preserve existing JSON, CSV, and Markdown export behavior from the new bottom output region.
 
 ## 4. Visual Polish And Responsiveness

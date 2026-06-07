@@ -534,6 +534,42 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
+    def test_workbench_log_viewer_renders_analysis_events(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        result = AnalysisResult(
+            events=[Event("auth.log", 7, "Failed password for root", source_address="192.0.2.10")],
+            findings=[],
+        )
+
+        window._render_result(result)
+
+        self.assertIn("auth.log", window.log_viewer_label.text())
+        self.assertIn("Failed password", window.log_viewer_label.text())
+
+        window.close()
+
+    def test_workbench_finding_selection_updates_evidence_detail(self):
+        app = QApplication.instance() or QApplication([])
+        window = desktop.LogcheckDesktop()
+        finding = Finding(
+            rule_id="keyword.failed_login",
+            severity="high",
+            explanation="Repeated failed login",
+            evidence=["Failed password for root from 192.0.2.10"],
+            source_file="auth.log",
+            line_number=7,
+            source_address="192.0.2.10",
+        )
+
+        window._show_finding_detail(finding)
+
+        self.assertIn("Repeated failed login", window.detail_label.text())
+        self.assertIn("auth.log", window.detail_label.text())
+        self.assertIn("Failed password", window.detail_label.text())
+
+        window.close()
+
     def test_overview_renders_analysis_insight_summary(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()

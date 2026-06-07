@@ -384,8 +384,17 @@ class LogcheckDesktop(QMainWindow):
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
         box.addWidget(self._pane_title("log_viewer_pane", "logViewerPaneTitle"))
-        box.addWidget(self._label(UI_TEXT["empty_log_viewer"], "normal", MUTED))
-        box.addStretch(1)
+        self.log_viewer_label = self._label(UI_TEXT["empty_log_viewer"], "small", MUTED)
+        self.log_viewer_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        log_widget = QWidget()
+        log_layout = QVBoxLayout(log_widget)
+        log_layout.setContentsMargins(0, 0, 0, 0)
+        log_layout.addWidget(self.log_viewer_label)
+        log_layout.addStretch(1)
+        log_scroll = QScrollArea()
+        log_scroll.setWidgetResizable(True)
+        log_scroll.setWidget(log_widget)
+        box.addWidget(log_scroll, 1)
         return pane
 
     def _workbench_rule_context_pane(self) -> QFrame:
@@ -817,7 +826,23 @@ class LogcheckDesktop(QMainWindow):
         self.metric_labels["sources"].setText(str(len(summary.top_suspicious_sources)))
         self._refresh_suspicious_sources(summary.top_suspicious_sources, result)
         self._refresh_insight_summary(result)
+        self._refresh_log_viewer(result)
         self._render_findings(result.findings)
+
+    def _refresh_log_viewer(self, result: AnalysisResult | None = None) -> None:
+        if result is None or not result.events:
+            self.log_viewer_label.setText(UI_TEXT["empty_log_viewer"])
+            return
+        finding_locations = {
+            (finding.source_file, finding.line_number)
+            for finding in result.findings
+            if finding.source_file and finding.line_number is not None
+        }
+        lines = []
+        for event in result.events[:200]:
+            marker = "!" if (event.source_file, event.line_number) in finding_locations else " "
+            lines.append(f"{marker} {event.source_file}:{event.line_number}  {event.message}")
+        self.log_viewer_label.setText("\n".join(lines))
 
     def _refresh_insight_summary(self, result: AnalysisResult) -> None:
         insights = getattr(result, "insights", None) or generate_insights(result)
@@ -938,6 +963,7 @@ class LogcheckDesktop(QMainWindow):
             f"{finding.rule_id}\n"
             f"\u4e25\u91cd\u7b49\u7ea7\uff1a{finding.severity}\n"
             f"\u6765\u6e90\u4f4d\u7f6e\uff1a{finding.source_file}:{finding.line_number}\n\n"
+            f"{finding.explanation}\n\n"
             f"{evidence}"
         )
 

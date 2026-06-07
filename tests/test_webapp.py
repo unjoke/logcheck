@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
+import re
 
 from logcheck.webapp import create_app
 
@@ -97,11 +98,16 @@ def test_dashboard_script_uses_ascii_separators():
     assert "\u8def" not in script
 
 
-def test_dashboard_script_does_not_fetch_external_inputs():
+def test_dashboard_script_fetches_only_local_api_inputs():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
-    assert "http://" not in script
-    assert "https://" not in script
+    fetch_targets = re.findall(r"fetch\(\s*([\"'`])([^\"'`]+)\1", script)
+    assert {target for _, target in fetch_targets} == {"/api/samples", "/api/analyze"}
+
+    export_target = re.search(r"window\.location\.assign\(\s*`([^`]+)`\s*\)", script)
+    assert export_target is not None
+    assert export_target.group(1).startswith("/api/exports/")
+    assert "analysis_id=${analysisId}" in export_target.group(1)
 
 
 def test_analyze_uploaded_file(tmp_path):
@@ -162,6 +168,19 @@ def test_analyze_requires_local_input(tmp_path):
     client = make_app(tmp_path)
 
     response = client.post("/api/analyze", data={}, content_type="multipart/form-data")
+
+    assert response.status_code == 400
+    assert "local log" in response.get_json()["error"].lower()
+
+
+def test_analyze_rejects_url_and_domain_fields_without_local_input(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.post(
+        "/api/analyze",
+        data={"url": "http://example.invalid/log", "domain": "example.invalid"},
+        content_type="multipart/form-data",
+    )
 
     assert response.status_code == 400
     assert "local log" in response.get_json()["error"].lower()

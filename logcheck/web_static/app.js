@@ -51,7 +51,7 @@ async function loadSamples() {
   } catch (error) {
     sampleSelect.innerHTML = "";
     sampleSelect.append(new Option("Samples not ready", ""));
-    setRunState(error.message || "Samples not ready", "error");
+    setRunState(error.message || "Samples not ready");
   }
 }
 
@@ -77,7 +77,7 @@ async function runAnalysis() {
     }
   }
 
-  setRunState("Running", "busy");
+  setRunState("Running");
   toggleExports(false);
 
   try {
@@ -93,12 +93,12 @@ async function runAnalysis() {
     state.findings = payload.findings || [];
     renderResult(payload);
     toggleExports(Boolean(state.latestAnalysisId));
-    setRunState("Complete", "ready");
+    setRunState("Complete");
   } catch (error) {
     state.latestAnalysisId = "";
     state.findings = [];
     renderError(error.message || "Analysis failed.");
-    setRunState("Needs input", "error");
+    setRunState("Needs input");
   }
 }
 
@@ -136,7 +136,7 @@ function renderFindings(findings) {
           ${escapeHtml(finding.severity || "info")}
         </span>
       </div>
-      <div class="finding-meta">${escapeHtml(finding.explanation || "Review evidence")} · ${escapeHtml(finding.source_file || "Local source")} · ${escapeHtml(String(finding.line_number || "line n/a"))}</div>
+      <div class="finding-meta">${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(String(finding.line_number || "line n/a"))}</div>
     `;
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
@@ -152,13 +152,37 @@ function renderEvidence(finding, index) {
   const lineMarkup = lines.length
     ? lines.map((line) => `<div class="evidence-line">${escapeHtml(String(line))}</div>`).join("")
     : '<p class="empty-state">No evidence lines were attached to this finding.</p>';
+  const sourceContext = sourceContextRows(finding);
   evidenceDetail.innerHTML = `
     <h3>${escapeHtml(finding.rule_id || `Finding ${index + 1}`)}</h3>
     <div class="detail-meta">
-      ${escapeHtml(finding.explanation || "Review evidence")} · ${escapeHtml(finding.source_file || "Local source")} · ${escapeHtml(finding.severity || "info")}
+      ${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(finding.severity || "info")}
     </div>
+    <dl class="source-context">${sourceContext}</dl>
     <div class="evidence-lines">${lineMarkup}</div>
   `;
+}
+
+function sourceContextRows(finding) {
+  const fields = [
+    ["Line", finding.line_number],
+    ["Actor", finding.actor],
+    ["Target", finding.target],
+    ["Source address", finding.source_address],
+    ["Matched keyword", finding.matched_keyword],
+    ["Confidence", finding.confidence_reason],
+  ];
+  return fields
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .map(
+      ([label, value]) => `
+        <div>
+          <dt>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(String(value))}</dd>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function renderInsights(insights) {

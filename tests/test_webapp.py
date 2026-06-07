@@ -6,6 +6,9 @@ from pathlib import Path
 from logcheck.webapp import create_app
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
 def make_app(tmp_path: Path):
     sample_dir = tmp_path / "samples"
     sample_dir.mkdir()
@@ -71,6 +74,27 @@ def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
         "external report",
     ]:
         assert forbidden not in html
+
+
+def test_dashboard_script_includes_evidence_source_context_fields():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for field in [
+        "line_number",
+        "actor",
+        "target",
+        "source_address",
+        "matched_keyword",
+        "confidence_reason",
+    ]:
+        assert field in script
+
+
+def test_dashboard_script_uses_ascii_separators():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "·" not in script
+    assert "路" not in script
 
 
 def test_analyze_uploaded_file(tmp_path):

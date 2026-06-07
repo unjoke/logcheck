@@ -204,8 +204,12 @@ class LogcheckDesktop(QMainWindow):
                 background: {PANEL};
                 border: 1px solid {BORDER};
             }}
+            QFrame#pane {{
+                background: {PANEL};
+                border: 1px solid {BORDER};
+            }}
             QFrame#row {{ background: {PANEL_2}; }}
-            QScrollArea {{ border: none; background: {PANEL}; }}
+            QScrollArea {{ border: 1px solid {BORDER}; background: {PANEL}; }}
             QScrollArea QWidget {{ background: {PANEL}; color: {TEXT}; }}
             QComboBox {{
                 background: {PANEL_2};
@@ -348,7 +352,7 @@ class LogcheckDesktop(QMainWindow):
     def _workbench_source_pane(self) -> QFrame:
         pane = QFrame()
         self.source_pane = pane
-        pane.setObjectName("panel")
+        pane.setObjectName("pane")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
@@ -379,7 +383,7 @@ class LogcheckDesktop(QMainWindow):
     def _workbench_log_viewer_pane(self) -> QFrame:
         pane = QFrame()
         self.log_viewer_pane = pane
-        pane.setObjectName("panel")
+        pane.setObjectName("pane")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
@@ -400,7 +404,7 @@ class LogcheckDesktop(QMainWindow):
     def _workbench_rule_context_pane(self) -> QFrame:
         pane = QFrame()
         self.rule_context_pane = pane
-        pane.setObjectName("panel")
+        pane.setObjectName("pane")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)
@@ -421,7 +425,7 @@ class LogcheckDesktop(QMainWindow):
     def _workbench_output_pane(self) -> QFrame:
         pane = QFrame()
         self.output_pane = pane
-        pane.setObjectName("panel")
+        pane.setObjectName("pane")
         box = QVBoxLayout(pane)
         box.setContentsMargins(16, 14, 16, 14)
         box.setSpacing(10)

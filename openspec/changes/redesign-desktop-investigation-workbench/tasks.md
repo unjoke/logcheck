@@ -23,14 +23,14 @@
 
 ## 4. Visual Polish And Responsiveness
 
-- [ ] 4.1 Update the stylesheet for a restrained investigation-tool look with readable contrast, consistent borders, and compact controls.
-- [ ] 4.2 Ensure monospaced log rows, severity indicators, buttons, labels, and scroll areas do not overlap or resize unpredictably.
-- [ ] 4.3 Define minimum dimensions or collapse behavior so the center log viewer remains usable on smaller windows.
-- [ ] 4.4 Remove duplicated or obsolete section controls that conflict with the workbench-first flow.
+- [x] 4.1 Update the stylesheet for a restrained investigation-tool look with readable contrast, consistent borders, and compact controls.
+- [x] 4.2 Ensure monospaced log rows, severity indicators, buttons, labels, and scroll areas do not overlap or resize unpredictably.
+- [x] 4.3 Define minimum dimensions or collapse behavior so the center log viewer remains usable on smaller windows.
+- [x] 4.4 Remove duplicated or obsolete section controls that conflict with the workbench-first flow.
 
 ## 5. Verification
 
-- [ ] 5.1 Run the desktop-focused tests and fix regressions.
+- [x] 5.1 Run the desktop-focused tests and fix regressions.
 - [ ] 5.2 Run the full test suite.
 - [ ] 5.3 Launch the desktop app and visually verify the workbench layout, source flow, analysis flow, finding detail, local exports, and absence of remote controls.
 - [ ] 5.4 Update README or course-facing documentation only if the user workflow changes enough to make current instructions misleading.

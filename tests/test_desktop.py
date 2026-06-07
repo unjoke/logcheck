@@ -671,13 +671,13 @@ class DesktopTests(unittest.TestCase):
 
         window.close()
 
-    def test_stylesheet_preserves_panel_scroll_and_row_surfaces(self):
+    def test_stylesheet_preserves_workbench_pane_and_row_surfaces(self):
         app = QApplication.instance() or QApplication([])
         window = desktop.LogcheckDesktop()
 
         stylesheet = window.styleSheet()
 
-        self.assertIn("QFrame#panel", stylesheet)
+        self.assertIn("QFrame#pane {", stylesheet)
         self.assertIn("QScrollArea", stylesheet)
         self.assertIn("QFrame#row", stylesheet)
         self.assertIn(f"QFrame#row {{ background: {desktop.PANEL_2};", stylesheet)

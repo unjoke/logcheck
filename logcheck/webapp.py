@@ -26,9 +26,9 @@ def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -
     app = Flask(__name__, static_folder=static_dir, static_url_path="")
     app.config["SAMPLE_DIR"] = sample_dir or Path("samples")
     app.config["UPLOAD_DIR"] = upload_dir or Path("worktmp") / "web_uploads"
-    app.config["LATEST_RESULT"] = None
     app.config["MAX_CONTENT_LENGTH"] = DEFAULT_MAX_CONTENT_LENGTH
     app.config["MAX_UPLOAD_FILES"] = DEFAULT_MAX_UPLOAD_FILES
+    app.config["ANALYSIS_RESULTS"] = {}
 
     @app.get("/")
     def index():
@@ -52,7 +52,6 @@ def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -
 
     @app.post("/api/analyze")
     def analyze():
-        app.config["LATEST_RESULT"] = None
         uploads = [upload for upload in request.files.getlist("files") if upload.filename]
         if len(uploads) > app.config["MAX_UPLOAD_FILES"]:
             return jsonify({"error": "Too many uploaded local log files."}), 400
@@ -67,14 +66,20 @@ def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -
             return jsonify({"error": f"Could not analyze local input: {exc}"}), 400
         finally:
             _cleanup_uploads(uploaded_paths)
-        app.config["LATEST_RESULT"] = result
-        return jsonify(serialize_result(result))
+        analysis_id = uuid4().hex
+        app.config["ANALYSIS_RESULTS"][analysis_id] = result
+        payload = serialize_result(result)
+        payload["analysis_id"] = analysis_id
+        return jsonify(payload)
 
     @app.get("/api/exports/<fmt>")
     def export(fmt: str):
         if fmt not in EXPORTERS:
             return jsonify({"error": "Unsupported export format."}), 404
-        result: AnalysisResult | None = app.config.get("LATEST_RESULT")
+        analysis_id = request.args.get("analysis_id")
+        if not analysis_id:
+            return jsonify({"error": "Analysis must run and analysis id is required before exporting."}), 400
+        result: AnalysisResult | None = app.config["ANALYSIS_RESULTS"].get(analysis_id)
         if result is None:
             return jsonify({"error": "Analysis must run before exporting."}), 400
         filename, mimetype, exporter = EXPORTERS[fmt]

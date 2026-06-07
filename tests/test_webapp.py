@@ -93,25 +93,33 @@ def test_export_requires_analysis_first(tmp_path):
 
 def test_export_json_after_analysis(tmp_path):
     client = make_app(tmp_path)
-    client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
+    analyze = client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
+    analysis_id = analyze.get_json()["analysis_id"]
 
-    response = client.get("/api/exports/json")
+    response = client.get(f"/api/exports/json?analysis_id={analysis_id}")
 
     assert response.status_code == 200
     assert response.mimetype == "application/json"
     assert b"findings" in response.data
 
 
-def test_failed_analysis_clears_previous_export_result(tmp_path):
+def test_export_requires_analysis_id_after_analysis(tmp_path):
     client = make_app(tmp_path)
     client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
 
-    failure = client.post("/api/analyze", data={}, content_type="multipart/form-data")
     export = client.get("/api/exports/json")
 
-    assert failure.status_code == 400
     assert export.status_code == 400
-    assert "analysis must run" in export.get_json()["error"].lower()
+    assert "analysis id" in export.get_json()["error"].lower()
+
+
+def test_export_rejects_unknown_analysis_id(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/api/exports/json?analysis_id=missing")
+
+    assert response.status_code == 400
+    assert "analysis must run" in response.get_json()["error"].lower()
 
 
 def test_analyze_rejects_more_than_configured_uploaded_files(tmp_path):

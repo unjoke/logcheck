@@ -34,6 +34,45 @@ def test_samples_endpoint_lists_local_samples(tmp_path):
     assert response.get_json()["samples"] == [{"id": "auth.log", "name": "auth.log"}]
 
 
+def test_dashboard_renders_local_investigation_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for region in [
+        "Logcheck",
+        "Source intake",
+        "Analysis summary",
+        "Finding queue",
+        "Evidence detail",
+        "Investigation insights",
+        "Exports",
+    ]:
+        assert region in html
+
+
+def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True).lower()
+    for forbidden in [
+        "url",
+        "domain",
+        "remote upload",
+        "network scan",
+        "scan target",
+        "exploit",
+        "block ip",
+        "external report",
+    ]:
+        assert forbidden not in html
+
+
 def test_analyze_uploaded_file(tmp_path):
     client = make_app(tmp_path)
 

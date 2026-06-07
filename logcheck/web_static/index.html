@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logcheck</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Logcheck</h1>
+          <p>Local Investigation Dashboard</p>
+        </div>
+        <div class="run-state" id="run-state">Ready</div>
+      </header>
+
+      <section class="workspace" aria-label="Dashboard workspace">
+        <aside class="panel intake-panel" aria-labelledby="source-intake-title">
+          <div class="panel-heading">
+            <h2 id="source-intake-title">Source intake</h2>
+          </div>
+          <form id="analysis-form" class="intake-form">
+            <label class="field">
+              <span>Local log files</span>
+              <input id="log-files" name="files" type="file" multiple>
+            </label>
+            <label class="field">
+              <span>Sample set</span>
+              <select id="sample-select" name="sample_ids" multiple size="7">
+                <option value="">Loading samples</option>
+              </select>
+            </label>
+            <button id="run-analysis" class="primary-action" type="submit">Run analysis</button>
+          </form>
+        </aside>
+
+        <section class="main-grid">
+          <section class="panel summary-panel" aria-labelledby="analysis-summary-title">
+            <div class="panel-heading">
+              <h2 id="analysis-summary-title">Analysis summary</h2>
+            </div>
+            <dl class="metrics" id="summary-metrics">
+              <div>
+                <dt>Events</dt>
+                <dd id="metric-events">0</dd>
+              </div>
+              <div>
+                <dt>Findings</dt>
+                <dd id="metric-findings">0</dd>
+              </div>
+              <div>
+                <dt>Sources</dt>
+                <dd id="metric-sources">0</dd>
+              </div>
+              <div>
+                <dt>High priority</dt>
+                <dd id="metric-high">0</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="panel queue-panel" aria-labelledby="finding-queue-title">
+            <div class="panel-heading">
+              <h2 id="finding-queue-title">Finding queue</h2>
+              <span id="queue-count">0 items</span>
+            </div>
+            <div id="finding-list" class="finding-list" role="list">
+              <p class="empty-state">Run analysis to populate the queue.</p>
+            </div>
+          </section>
+        </section>
+
+        <aside class="panel detail-panel" aria-labelledby="evidence-detail-title">
+          <div class="panel-heading">
+            <h2 id="evidence-detail-title">Evidence detail</h2>
+          </div>
+          <article id="evidence-detail" class="evidence-detail">
+            <p class="empty-state">Select a finding to inspect matched evidence.</p>
+          </article>
+
+          <div class="panel-section" aria-labelledby="investigation-insights-title">
+            <div class="panel-heading compact">
+              <h2 id="investigation-insights-title">Investigation insights</h2>
+            </div>
+            <ul id="insight-list" class="insight-list">
+              <li class="empty-state">Insights appear after analysis.</li>
+            </ul>
+          </div>
+
+          <div class="panel-section" aria-labelledby="exports-title">
+            <div class="panel-heading compact">
+              <h2 id="exports-title">Exports</h2>
+            </div>
+            <div class="export-actions">
+              <button type="button" class="export-button" data-format="json" disabled>JSON</button>
+              <button type="button" class="export-button" data-format="csv" disabled>CSV</button>
+              <button type="button" class="export-button" data-format="markdown" disabled>Markdown</button>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

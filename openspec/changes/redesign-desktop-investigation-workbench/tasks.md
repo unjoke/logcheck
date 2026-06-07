@@ -31,6 +31,6 @@
 ## 5. Verification
 
 - [x] 5.1 Run the desktop-focused tests and fix regressions.
-- [ ] 5.2 Run the full test suite.
-- [ ] 5.3 Launch the desktop app and visually verify the workbench layout, source flow, analysis flow, finding detail, local exports, and absence of remote controls.
-- [ ] 5.4 Update README or course-facing documentation only if the user workflow changes enough to make current instructions misleading.
+- [x] 5.2 Run the full test suite.
+- [x] 5.3 Launch the desktop app and visually verify the workbench layout, source flow, analysis flow, finding detail, local exports, and absence of remote controls.
+- [x] 5.4 Update README or course-facing documentation only if the user workflow changes enough to make current instructions misleading.

@@ -7,7 +7,7 @@
 
 ## 2. Workbench Shell
 
-- [ ] 2.1 Replace the current primary desktop shell composition with a workbench layout using stable left, center, right, and bottom regions.
+- [x] 2.1 Replace the current primary desktop shell composition with a workbench layout using stable left, center, right, and bottom regions.
 - [ ] 2.2 Move source selection, selected source state, and source diagnostics into the left source region.
 - [ ] 2.3 Add the central log viewer surface with stable row styling, empty state, and room for highlighted finding rows.
 - [ ] 2.4 Move local rule status, rule file state, and local threshold/context controls into the right region.

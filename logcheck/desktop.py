@@ -67,6 +67,15 @@ UI_TEXT = {
     "nav_rules": "\u68c0\u6d4b\u89c4\u5219",
     "nav_suspicious": "\u53ef\u7591\u6765\u6e90",
     "nav_export": "\u5bfc\u51fa\u62a5\u544a",
+    "workbench_tab": "\u8c03\u67e5",
+    "source_pane": "\u65e5\u5fd7\u6e90",
+    "log_viewer_pane": "\u65e5\u5fd7\u67e5\u770b\u5668",
+    "rule_context_pane": "\u89c4\u5219\u4e0a\u4e0b\u6587",
+    "output_pane": "\u5206\u6790\u8f93\u51fa",
+    "evidence_detail": "\u8bc1\u636e\u8be6\u60c5",
+    "analysis_history": "\u5386\u53f2\u8bb0\u5f55",
+    "local_export": "\u672c\u5730\u5bfc\u51fa",
+    "empty_log_viewer": "\u9009\u62e9\u672c\u5730\u65e5\u5fd7\u5e76\u8fd0\u884c\u5206\u6790\u540e\u67e5\u770b\u4e8b\u4ef6\u8bc1\u636e\u3002",
     "recent": "\u6700\u8fd1\u5206\u6790",
     "settings": "\u8bbe\u7f6e",
     "main_title": "\u5165\u4fb5\u884c\u4e3a\u5206\u6790\u603b\u89c8",
@@ -280,6 +289,11 @@ class LogcheckDesktop(QMainWindow):
             self.workspace_stack.addWidget(self.section_widgets[key])
         return self.workspace_stack
 
+    def _pane_title(self, text_key: str, object_name: str) -> QLabel:
+        title = self._label(UI_TEXT[text_key], "bold", bold=True)
+        title.setObjectName(object_name)
+        return title
+
     def _overview_section(self) -> QWidget:
         main = QWidget()
         layout = QVBoxLayout(main)
@@ -313,12 +327,70 @@ class LogcheckDesktop(QMainWindow):
             cards.addWidget(self._metric_card(key, UI_TEXT[title_key], UI_TEXT[hint_key]), 0, column)
         layout.addLayout(cards)
 
+        layout.addWidget(self._workbench_preview(), 1)
+        return main
+
+    def _workbench_preview(self) -> QWidget:
+        workbench = QWidget()
+        layout = QVBoxLayout(workbench)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
+        upper = QHBoxLayout()
+        upper.setSpacing(12)
+        upper.addWidget(self._workbench_source_pane(), 2)
+        upper.addWidget(self._workbench_log_viewer_pane(), 5)
+        upper.addWidget(self._workbench_rule_context_pane(), 2)
+        layout.addLayout(upper, 3)
+        layout.addWidget(self._workbench_output_pane(), 2)
+        return workbench
+
+    def _workbench_source_pane(self) -> QFrame:
+        pane = QFrame()
+        pane.setObjectName("panel")
+        box = QVBoxLayout(pane)
+        box.setContentsMargins(16, 14, 16, 14)
+        box.setSpacing(10)
+        box.addWidget(self._pane_title("source_pane", "sourcePaneTitle"))
+        box.addWidget(self._label(UI_TEXT["no_logs"], "normal", MUTED))
+        box.addStretch(1)
+        return pane
+
+    def _workbench_log_viewer_pane(self) -> QFrame:
+        pane = QFrame()
+        pane.setObjectName("panel")
+        box = QVBoxLayout(pane)
+        box.setContentsMargins(16, 14, 16, 14)
+        box.setSpacing(10)
+        box.addWidget(self._pane_title("log_viewer_pane", "logViewerPaneTitle"))
+        box.addWidget(self._label(UI_TEXT["empty_log_viewer"], "normal", MUTED))
+        box.addStretch(1)
+        return pane
+
+    def _workbench_rule_context_pane(self) -> QFrame:
+        pane = QFrame()
+        pane.setObjectName("panel")
+        box = QVBoxLayout(pane)
+        box.setContentsMargins(16, 14, 16, 14)
+        box.setSpacing(10)
+        box.addWidget(self._pane_title("rule_context_pane", "ruleContextPaneTitle"))
+        box.addWidget(self._label(self._format_rules_text(), "small", MUTED))
+        box.addStretch(1)
+        return pane
+
+    def _workbench_output_pane(self) -> QFrame:
+        pane = QFrame()
+        pane.setObjectName("panel")
+        box = QVBoxLayout(pane)
+        box.setContentsMargins(16, 14, 16, 14)
+        box.setSpacing(10)
+        box.addWidget(self._pane_title("output_pane", "outputPaneTitle"))
         content = QHBoxLayout()
-        content.setSpacing(16)
+        content.setSpacing(12)
         content.addWidget(self._finding_panel(), 1)
         content.addWidget(self._details_panel())
-        layout.addLayout(content, 1)
-        return main
+        box.addLayout(content, 1)
+        return pane
 
     def _simple_section(self, title: str, subtitle: str, lines: list[str]) -> QWidget:
         section = QWidget()

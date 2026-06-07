@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Demonstrate comprehensive local iteration
 The project SHALL include evidence that the comprehensive iteration improves frontend polish, backend analysis behavior, reports, and local safety.

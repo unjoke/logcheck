@@ -2,7 +2,7 @@ workflow: full
 phase: build
 build_mode: subagent-driven-development
 isolation: worktree
-verify_mode: null
+verify_mode: full
 base_ref: f9a1d1b18623222f2c000a5ade464f3304c0e82b
 design_doc: docs/superpowers/specs/2026-06-07-rebuild-web-frontend-technical-design.md
 plan: docs/superpowers/plans/2026-06-07-rebuild-web-frontend.md

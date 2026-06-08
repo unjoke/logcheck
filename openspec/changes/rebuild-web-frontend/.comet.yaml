@@ -1,5 +1,5 @@
 workflow: full
-phase: verify
+phase: archive
 build_mode: subagent-driven-development
 isolation: worktree
 verify_mode: full
@@ -8,11 +8,11 @@ verify_command: /mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests
 base_ref: f9a1d1b18623222f2c000a5ade464f3304c0e82b
 design_doc: docs/superpowers/specs/2026-06-07-rebuild-web-frontend-technical-design.md
 plan: docs/superpowers/plans/2026-06-07-rebuild-web-frontend.md
-verify_result: pending
+verify_result: pass
 verification_report: docs/superpowers/reports/2026-06-07-rebuild-web-frontend-verify.md
-branch_status: pending
+branch_status: handled
 created_at: 2026-06-07
-verified_at: null
+verified_at: 2026-06-08
 archived: false
 handoff_context: openspec/changes/rebuild-web-frontend/.comet/handoff/design-context.json
 handoff_hash: 3f4714114a76d00e9c285965715e26b38900bcd8d82ff7ca680c1964737aab15

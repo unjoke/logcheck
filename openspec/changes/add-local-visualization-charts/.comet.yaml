@@ -14,3 +14,5 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/add-local-visualization-charts/.comet/handoff/design-context.json
 handoff_hash: 006c3e1ad5fd26c865af524e926c1f26575a97e56515d9fb49793c1f45df0576
+build_command: python -m pytest tests -q
+verify_command: python -m pytest tests -q

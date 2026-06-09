@@ -12,6 +12,12 @@ const queueCount = document.querySelector("#queue-count");
 const evidenceDetail = document.querySelector("#evidence-detail");
 const insightList = document.querySelector("#insight-list");
 const exportButtons = Array.from(document.querySelectorAll(".export-button"));
+const chartCount = document.querySelector("#chart-count");
+const charts = {
+  source: document.querySelector("#source-chart"),
+  time: document.querySelector("#time-chart"),
+  severity: document.querySelector("#severity-chart"),
+};
 
 const metrics = {
   events: document.querySelector("#metric-events"),
@@ -110,6 +116,7 @@ function renderResult(payload) {
   metrics.high.textContent = countHighPriority(state.findings);
   renderFindings(state.findings);
   renderInsights(payload.insights || []);
+  renderCharts(payload);
   if (state.findings.length) {
     renderEvidence(state.findings[0], 0);
   } else {
@@ -232,6 +239,7 @@ function renderError(message) {
   findingList.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
   evidenceDetail.innerHTML = '<p class="empty-state">Select local material and run analysis.</p>';
   insightList.innerHTML = '<li class="empty-state">Insights appear after analysis.</li>';
+  resetCharts();
   toggleExports(false);
 }
 
@@ -250,6 +258,94 @@ function countHighPriority(findings) {
     const severity = String(finding.severity || "").toLowerCase();
     return severity === "high" || severity === "critical";
   }).length;
+}
+
+function renderCharts(payload) {
+  const findings = payload.findings || [];
+  const summary = payload.summary || {};
+  const insights = payload.insights || {};
+  const sourceRows = chartSourceDistribution(findings);
+  const timeRows = chartTimeDistribution(findings, insights);
+  const severityRows = chartSeverityDistribution(summary, findings);
+
+  chartCount.textContent = findings.length ? "3 charts" : "0 charts";
+  renderBarChart(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
+  renderBarChart(charts.time, timeRows, { empty: "No time or evidence-order data to chart." });
+  renderBarChart(charts.severity, severityRows, { empty: "No severity findings to chart." });
+}
+
+function resetCharts() {
+  chartCount.textContent = "0 charts";
+  for (const container of Object.values(charts)) {
+    container.innerHTML = '<p class="empty-state">Run analysis to populate local charts.</p>';
+  }
+}
+
+function chartSourceDistribution(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const label = finding.source_address || finding.actor || finding.source_file || "unknown";
+    counts.set(label, (counts.get(label) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, 5);
+}
+
+function chartTimeDistribution(findings, insights) {
+  const counts = new Map();
+  const timeline = Array.isArray(insights.timeline) ? insights.timeline : [];
+  findings.forEach((finding, index) => {
+    const label =
+      finding.timestamp ||
+      (timeline[index] && timeline[index].label) ||
+      `Evidence ${index + 1}`;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  return sortedChartRows(counts, false).slice(0, 6);
+}
+
+function chartSeverityDistribution(summary, findings) {
+  const severityCounts = summary.findings_by_severity || {};
+  const fallback = findings.reduce((counts, finding) => {
+    const severity = String(finding.severity || "unknown").toLowerCase();
+    counts[severity] = (counts[severity] || 0) + 1;
+    return counts;
+  }, {});
+  const counts = Object.keys(severityCounts).length ? severityCounts : fallback;
+  return ["critical", "high", "medium", "low"]
+    .map((severity) => ({ label: severity, value: counts[severity] || 0 }))
+    .filter((row) => row.value > 0);
+}
+
+function sortedChartRows(counts, byValue = true) {
+  const rows = Array.from(counts, ([label, value]) => ({ label, value }));
+  return rows.sort((left, right) => {
+    if (byValue && right.value !== left.value) {
+      return right.value - left.value;
+    }
+    return String(left.label).localeCompare(String(right.label));
+  });
+}
+
+function renderBarChart(container, rows, options) {
+  container.innerHTML = "";
+  if (!rows.length) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(options.empty)}</p>`;
+    return;
+  }
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  for (const row of rows) {
+    const item = document.createElement("div");
+    item.className = "chart-row";
+    item.title = `${row.label}: ${row.value}`;
+    item.innerHTML = `
+      <span class="chart-label">${escapeHtml(row.label)}</span>
+      <span class="chart-track">
+        <span class="chart-fill" style="width: ${(row.value / max) * 100}%"></span>
+      </span>
+      <span class="chart-value">${escapeHtml(String(row.value))}</span>
+    `;
+    container.append(item);
+  }
 }
 
 function escapeHtml(value) {

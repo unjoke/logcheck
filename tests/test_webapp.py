@@ -123,6 +123,22 @@ def test_dashboard_script_uses_actual_timeline_fields():
         assert field in script
 
 
+def test_dashboard_script_includes_local_chart_helpers():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for helper in [
+        "renderCharts",
+        "chartSourceDistribution",
+        "chartTimeDistribution",
+        "chartSeverityDistribution",
+        "renderBarChart",
+        "resetCharts",
+    ]:
+        assert helper in script
+    assert "renderCharts(payload)" in script
+    assert "resetCharts()" in script
+
+
 def test_dashboard_script_fetches_only_local_api_inputs():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 

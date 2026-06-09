@@ -57,6 +57,22 @@ def test_dashboard_renders_local_investigation_regions(tmp_path):
         assert region in html
 
 
+def test_dashboard_renders_visual_report_region(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for text in [
+        "Visual report",
+        "Source/entity frequency",
+        "Time/evidence order",
+        "Severity distribution",
+    ]:
+        assert text in html
+
+
 def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
     client = make_app(tmp_path)
 

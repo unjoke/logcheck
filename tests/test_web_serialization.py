@@ -51,6 +51,7 @@ def test_serialize_result_includes_summary_and_source_context():
     assert finding["actor"] == "root"
     assert finding["target"] == "sshd"
     assert finding["source_address"] == "192.0.2.10"
+    assert finding["evidence"] == ["Failed password for root from 192.0.2.10"]
     assert finding["confidence_reason"] == "exact keyword match"
 
 

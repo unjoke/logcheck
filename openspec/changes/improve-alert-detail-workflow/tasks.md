@@ -7,9 +7,9 @@
 
 ## 2. Data Flow
 
-- [ ] 2.1 Audit the current analysis result payload for fields needed by the selected-alert detail view.
-- [ ] 2.2 If existing evidence is insufficient, add a minimal local-only detail representation for the matched log line or other alert-specific evidence without changing detection semantics.
-- [ ] 2.3 Ensure serialized finding data omits empty optional detail fields from the rendered UI while preserving existing export behavior.
+- [x] 2.1 Audit the current analysis result payload for fields needed by the selected-alert detail view.
+- [x] 2.2 If existing evidence is insufficient, add a minimal local-only detail representation for the matched log line or other alert-specific evidence without changing detection semantics.
+- [x] 2.3 Ensure serialized finding data omits empty optional detail fields from the rendered UI while preserving existing export behavior.
 
 ## 3. Frontend Rendering
 

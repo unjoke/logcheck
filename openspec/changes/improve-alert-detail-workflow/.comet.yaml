@@ -1,9 +1,9 @@
 workflow: full
-phase: build
+phase: verify
 build_mode: subagent-driven-development
 isolation: branch
-build_command: "python -m pytest -q && node --check logcheck/web_static/app.js"
-verify_command: "python -m pytest -q && node --check logcheck/web_static/app.js"
+build_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
+verify_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
 verify_mode: null
 base_ref: 959fb8ec6c2b21667fb96ddc81c11dde92a4435c
 design_doc: docs/superpowers/specs/2026-06-09-improve-alert-detail-workflow-design.md

@@ -7,7 +7,7 @@ base_ref: 3ca960d6385ff9857316212dd1db8f35df290a45
 design_doc: docs/superpowers/specs/2026-06-09-local-visualization-charts-design.md
 plan: docs/superpowers/plans/2026-06-09-local-visualization-charts.md
 verify_result: pending
-verification_report: null
+verification_report: docs/superpowers/reports/2026-06-09-add-local-visualization-charts-verify.md
 branch_status: pending
 created_at: 2026-06-09
 verified_at: null

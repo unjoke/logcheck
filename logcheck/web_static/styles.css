@@ -205,6 +205,75 @@ select {
   padding: 10px;
 }
 
+.visual-report-panel {
+  overflow: hidden;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+
+.chart-card {
+  min-width: 0;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.chart-card h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.chart-body {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: minmax(74px, 1fr) minmax(90px, 2fr) 28px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.chart-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-track {
+  position: relative;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-soft);
+}
+
+.chart-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 3px;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.chart-value {
+  color: var(--ink);
+  font-weight: 800;
+  text-align: right;
+}
+
 .finding-card {
   display: grid;
   gap: 6px;
@@ -385,6 +454,10 @@ select {
   .metrics,
   .export-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
   }
 
   .finding-list {

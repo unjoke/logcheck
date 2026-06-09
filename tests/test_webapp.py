@@ -151,6 +151,20 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     assert "analysis_id=${analysisId}" in export_target.group(1)
 
 
+def test_dashboard_styles_include_responsive_chart_rules():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    for selector in [
+        ".visual-report-panel",
+        ".chart-grid",
+        ".chart-card",
+        ".chart-row",
+        ".chart-fill",
+    ]:
+        assert selector in styles
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in styles
+
+
 def test_analyze_uploaded_file(tmp_path):
     client = make_app(tmp_path)
 

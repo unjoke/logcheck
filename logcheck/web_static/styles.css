@@ -236,7 +236,7 @@ select {
 
 .chart-row {
   display: grid;
-  grid-template-columns: minmax(74px, 1fr) minmax(90px, 2fr) 28px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1.8fr) minmax(24px, auto);
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -245,6 +245,7 @@ select {
 
 .chart-label {
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   color: var(--muted);
   font-weight: 700;
@@ -369,6 +370,48 @@ select {
 .evidence-detail h3 {
   margin: 0 0 8px;
   font-size: 16px;
+}
+
+.detail-eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.alert-detail-section {
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.alert-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.alert-detail-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.alert-log-detail {
+  display: grid;
+  max-width: 100%;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.alert-log-line {
+  min-width: 0;
+  border-left: 3px solid var(--accent);
+  background: #f7faf8;
+  padding: 8px 10px;
+  color: #24342b;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .evidence-lines {

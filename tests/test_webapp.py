@@ -423,3 +423,20 @@ def test_uploaded_files_are_cleaned_after_analysis(tmp_path):
 
     assert response.status_code == 200
     assert not list(upload_dir.glob("*upload.log"))
+
+
+def test_dashboard_styles_constrain_alert_log_detail_overflow():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    for selector in [".alert-detail-section", ".alert-log-detail", ".alert-log-line"]:
+        assert selector in styles
+    assert "overflow-x: auto" in styles
+    assert "overflow-wrap: anywhere" in styles
+
+
+def test_dashboard_styles_prevent_chart_label_overlap():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    assert "grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1.8fr) minmax(24px, auto)" in styles
+    assert ".chart-label" in styles
+    assert "max-width: 100%" in styles

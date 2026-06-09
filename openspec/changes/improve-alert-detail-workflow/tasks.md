@@ -2,8 +2,8 @@
 
 - [x] 1.1 Add or update frontend tests for selecting a finding and rendering its detailed evidence, metadata, and selected state.
 - [x] 1.2 Add a regression test that a new analysis with no findings clears stale selected-alert detail.
-- [ ] 1.3 Add a test or browser verification note for long evidence/log paths staying inside the detail panel without page-level horizontal overflow.
-- [ ] 1.4 Add a test or browser verification note for visual report labels not overlapping adjacent chart groups.
+- [x] 1.3 Add a test or browser verification note for long evidence/log paths staying inside the detail panel without page-level horizontal overflow.
+- [x] 1.4 Add a test or browser verification note for visual report labels not overlapping adjacent chart groups.
 
 ## 2. Data Flow
 
@@ -16,7 +16,7 @@
 - [ ] 3.1 Refactor finding list rendering into an explicit alert review list with clear selected state and source metadata.
 - [x] 3.2 Refactor selected-alert detail rendering into structured sections for summary, evidence, reasons, and optional supporting detail.
 - [x] 3.3 Refactor investigation insights so they stay concise and separate from selected-alert evidence.
-- [ ] 3.4 Adjust visual report chart layout constraints to prevent label/bar overlap and page-level horizontal scrolling.
+- [x] 3.4 Adjust visual report chart layout constraints to prevent label/bar overlap and page-level horizontal scrolling.
 - [ ] 3.5 Verify empty states for no analysis, no findings, and findings without optional metadata.
 
 ## 4. Verification

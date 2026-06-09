@@ -15,9 +15,9 @@
 
 - [ ] 3.1 Refactor finding list rendering into an explicit alert review list with clear selected state and source metadata.
 - [x] 3.2 Refactor selected-alert detail rendering into structured sections for summary, evidence, reasons, and optional supporting detail.
-- [ ] 3.3 Refactor investigation insights so they stay concise and separate from selected-alert evidence.
+- [x] 3.3 Refactor investigation insights so they stay concise and separate from selected-alert evidence.
 - [ ] 3.4 Adjust visual report chart layout constraints to prevent label/bar overlap and page-level horizontal scrolling.
-- [ ] 3.5 Verify empty states for no analysis, no findings, and findings without optional metadata.
+- [x] 3.5 Verify empty states for no analysis, no findings, and findings without optional metadata.
 
 ## 4. Verification
 

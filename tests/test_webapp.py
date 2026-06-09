@@ -10,6 +10,21 @@ from logcheck.webapp import create_app
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def script_function_body(script: str, function_name: str) -> str:
+    match = re.search(rf"function {function_name}\([^)]*\) \{{", script)
+    assert match is not None
+    start = match.end()
+    depth = 1
+    for index in range(start, len(script)):
+        if script[index] == "{":
+            depth += 1
+        elif script[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return script[start:index]
+    raise AssertionError(f"{function_name} function body was not closed")
+
+
 def make_app(tmp_path: Path):
     sample_dir = tmp_path / "samples"
     sample_dir.mkdir()
@@ -93,7 +108,7 @@ def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
         assert forbidden not in html
 
 
-def test_dashboard_script_includes_evidence_source_context_fields():
+def test_dashboard_script_includes_evidence_detail_fields():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
     for field in [
@@ -105,6 +120,21 @@ def test_dashboard_script_includes_evidence_source_context_fields():
         "confidence_reason",
     ]:
         assert field in script
+
+
+def test_dashboard_script_keeps_insights_separate_from_alert_evidence():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "entity_profiles" in script
+    assert "timeline" not in script_function_body(script, "normalizeInsights")
+
+
+def test_dashboard_script_omits_empty_optional_detail_fields():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert 'value !== null && value !== undefined && value !== ""' in script
+    assert "Severity reason" in script
+    assert "Confidence reason" in script
 
 
 def test_dashboard_script_uses_ascii_separators():

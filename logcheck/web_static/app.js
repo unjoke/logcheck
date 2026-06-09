@@ -261,14 +261,15 @@ function normalizeInsights(insights) {
   if (insights.risk_level) {
     items.push(`Risk level: ${insights.risk_level}`);
   }
+  for (const profile of insights.entity_profiles || []) {
+    const value = profile.value || "unknown";
+    const count = profile.finding_count || 0;
+    items.push(`Affected ${profile.kind || "entity"}: ${value} (${count} findings)`);
+  }
   for (const suggestion of insights.suggestions || []) {
     items.push(`${suggestion.title}: ${suggestion.detail}`);
   }
-  for (const item of insights.timeline || []) {
-    const context = [item.severity, item.rule_id, item.entity, item.source].filter(Boolean).join(" | ");
-    items.push(context ? `${item.label || item.timestamp}: ${context}` : item.label || item.timestamp);
-  }
-  return items.filter(Boolean);
+  return items.filter(Boolean).slice(0, 6);
 }
 
 function renderError(message) {

@@ -31,3 +31,14 @@ The in-app browser screenshot API timed out during capture, so verification evid
 - `openspec validate rebuild-web-frontend --strict`
 - `openspec validate add-local-visualization-charts --strict`
 - `python -m logcheck.webapp`
+
+## 2026-06-09 Alert Detail Workflow Verification
+
+- Local server: started Logcheck on `http://127.0.0.1:8766` because `8765` was already occupied by another local process.
+- Desktop verification: analyzed bundled `incident.log`; the dashboard completed with `27` findings and `12` chart rows.
+- Desktop selected-alert verification: the default `keyword.failed_login` alert showed `Selected alert`, source metadata, and the single alert log line `Jun  2 10:01:05 ubuntu sshd[123]: Failed password for invalid user admin from 192.0.2.10 port 51234 ssh2`.
+- Desktop click verification: clicking the next finding changed the selected alert to `keyword.invalid_user` and kept the same alert-specific source log detail visible for that finding.
+- Desktop layout verification: chart label/track overlap count was `0`; chart grid did not overflow; page-level horizontal overflow was false.
+- Insight separation verification: insights rendered as 6 concise summary items including risk and affected entities, not as a duplicated per-alert timeline list.
+- Mobile-width verification: at `390x844`, charts stacked vertically, selected alert detail still contained log detail, the detail panel did not overflow, and page-level horizontal overflow was false.
+- Commands also run during build verification: `python -m pytest tests/test_webapp.py tests/test_web_serialization.py -q` -> `32 passed`; `python -m pytest -q` -> `82 passed`; `node --check logcheck/web_static/app.js` -> no syntax errors.

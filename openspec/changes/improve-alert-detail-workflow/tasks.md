@@ -22,5 +22,5 @@
 ## 4. Verification
 
 - [x] 4.1 Run the automated test suite covering models, rules, insights, exports, and web rendering.
-- [ ] 4.2 Run the web dashboard locally and capture desktop verification that selected alerts show detailed log evidence.
-- [ ] 4.3 Capture mobile-width verification that charts and alert detail remain readable without incoherent overlap.
+- [x] 4.2 Run the web dashboard locally and capture desktop verification that selected alerts show detailed log evidence.
+- [x] 4.3 Capture mobile-width verification that charts and alert detail remain readable without incoherent overlap.

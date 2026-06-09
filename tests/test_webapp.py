@@ -117,8 +117,20 @@ def test_dashboard_script_uses_ascii_separators():
 def test_dashboard_script_renders_structured_selected_alert_detail():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
+    assert re.search(
+        r"if \(state\.findings\.length\) {\s*renderSelectedAlert\(state\.findings\[0\], 0\);",
+        script,
+    )
+    assert re.search(
+        r'button\.addEventListener\("click", \(\) => {\s*'
+        r'document\.querySelectorAll\("\.finding-card"\).*?'
+        r"button\.classList\.add\(\"active\"\);\s*"
+        r"renderSelectedAlert\(finding, index\);",
+        script,
+        re.DOTALL,
+    )
+
     for expected in [
-        "renderSelectedAlert",
         "alert-detail-section",
         "alert-log-detail",
         "Severity reason",
@@ -127,14 +139,27 @@ def test_dashboard_script_renders_structured_selected_alert_detail():
     ]:
         assert expected in script
 
+    source_context_rows = re.search(r"function sourceContextRows\(finding\) {(?P<body>.*?)^}", script, re.DOTALL | re.MULTILINE)
+    assert source_context_rows is not None
+    assert '["Confidence", finding.confidence_reason]' not in source_context_rows.group("body")
     assert "No evidence lines were attached to this finding." not in script
 
 
 def test_dashboard_script_clears_stale_selected_alert_when_no_findings():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
-    assert "clearSelectedAlert" in script
-    assert "No findings were produced for the selected local material." in script
+    assert re.search(
+        r"else {\s*"
+        r'clearSelectedAlert\("No findings were produced for the selected local material\."\);\s*'
+        r"}",
+        script,
+    )
+    assert re.search(
+        r"function renderError\(message\) {.*?"
+        r'clearSelectedAlert\("Select local material and run analysis\."\);',
+        script,
+        re.DOTALL,
+    )
 
 
 def test_dashboard_script_uses_actual_timeline_fields():

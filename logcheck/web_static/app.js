@@ -192,7 +192,6 @@ function sourceContextRows(finding) {
     ["Target", finding.target],
     ["Source address", finding.source_address],
     ["Matched keyword", finding.matched_keyword],
-    ["Confidence", finding.confidence_reason],
   ];
   return fields
     .filter(([, value]) => value !== null && value !== undefined && value !== "")

@@ -4,7 +4,7 @@ build_mode: subagent-driven-development
 isolation: branch
 build_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
 verify_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
-verify_mode: null
+verify_mode: full
 base_ref: 959fb8ec6c2b21667fb96ddc81c11dde92a4435c
 design_doc: docs/superpowers/specs/2026-06-09-improve-alert-detail-workflow-design.md
 plan: docs/superpowers/plans/2026-06-09-improve-alert-detail-workflow.md

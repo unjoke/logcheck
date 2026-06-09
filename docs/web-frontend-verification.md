@@ -11,6 +11,9 @@ Change: rebuild-web-frontend
 - Source intake: bundled sample log selection was available, and analysis completed with the `auth.log` sample.
 - Analysis review: summary metrics, finding queue, evidence source context, insight text, and export controls were visible after analysis.
 - Regression check: the insight timeline did not render `undefined`; it used actual timeline fields such as severity, rule id, entity, and source.
+- Visual report: verified source/entity, time/evidence-order, and severity charts after analyzing the bundled `incident.log` sample.
+- Privilege-escalation evidence: verified findings for sudo/su failure and sensitive/admin path access remain passive and retain local source context.
+- Incident sample: verified `samples/incident.log` covers benign baseline, brute-force, invalid-user, unauthorized-access, privilege-escalation, suspicious-command, and multiple source entities.
 
 The in-app browser screenshot API timed out during capture, so verification evidence was recorded through DOM region checks and layout metrics instead.
 
@@ -22,7 +25,9 @@ The in-app browser screenshot API timed out during capture, so verification evid
 ## Commands
 
 - `python -m pytest tests/test_webapp.py tests/test_web_serialization.py -q`
+- `python -m pytest tests/test_rules.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py -q`
 - `node --check logcheck/web_static/app.js`
 - `python -m pytest tests -q`
 - `openspec validate rebuild-web-frontend --strict`
+- `openspec validate add-local-visualization-charts --strict`
 - `python -m logcheck.webapp`

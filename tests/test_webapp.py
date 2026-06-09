@@ -114,6 +114,29 @@ def test_dashboard_script_uses_ascii_separators():
     assert "\u8def" not in script
 
 
+def test_dashboard_script_renders_structured_selected_alert_detail():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for expected in [
+        "renderSelectedAlert",
+        "alert-detail-section",
+        "alert-log-detail",
+        "Severity reason",
+        "Confidence reason",
+        "Selected alert",
+    ]:
+        assert expected in script
+
+    assert "No evidence lines were attached to this finding." not in script
+
+
+def test_dashboard_script_clears_stale_selected_alert_when_no_findings():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "clearSelectedAlert" in script
+    assert "No findings were produced for the selected local material." in script
+
+
 def test_dashboard_script_uses_actual_timeline_fields():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 

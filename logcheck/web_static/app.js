@@ -118,9 +118,9 @@ function renderResult(payload) {
   renderInsights(payload.insights || []);
   renderCharts(payload);
   if (state.findings.length) {
-    renderEvidence(state.findings[0], 0);
+    renderSelectedAlert(state.findings[0], 0);
   } else {
-    evidenceDetail.innerHTML = '<p class="empty-state">No findings were produced for the selected local material.</p>';
+    clearSelectedAlert("No findings were produced for the selected local material.");
   }
 }
 
@@ -148,26 +148,41 @@ function renderFindings(findings) {
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
       button.classList.add("active");
-      renderEvidence(finding, index);
+      renderSelectedAlert(finding, index);
     });
     findingList.append(button);
   });
 }
 
-function renderEvidence(finding, index) {
+function renderSelectedAlert(finding, index) {
   const lines = finding.evidence || finding.matched_lines || [];
-  const lineMarkup = lines.length
-    ? lines.map((line) => `<div class="evidence-line">${escapeHtml(String(line))}</div>`).join("")
-    : '<p class="empty-state">No evidence lines were attached to this finding.</p>';
+  const logMarkup = lines.length
+    ? lines.map((line) => `<div class="alert-log-line">${escapeHtml(String(line))}</div>`).join("")
+    : '<p class="empty-state">No alert-specific log detail is available for this finding.</p>';
   const sourceContext = sourceContextRows(finding);
+  const reasonRows = reasonContextRows(finding);
   evidenceDetail.innerHTML = `
-    <h3>${escapeHtml(finding.rule_id || `Finding ${index + 1}`)}</h3>
-    <div class="detail-meta">
-      ${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(finding.severity || "info")}
-    </div>
-    <dl class="source-context">${sourceContext}</dl>
-    <div class="evidence-lines">${lineMarkup}</div>
+    <section class="alert-detail-section">
+      <p class="detail-eyebrow">Selected alert</p>
+      <h3>${escapeHtml(finding.rule_id || `Finding ${index + 1}`)}</h3>
+      <div class="detail-meta">
+        ${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(finding.severity || "info")}
+      </div>
+    </section>
+    <section class="alert-detail-section">
+      <h4>Source context</h4>
+      <dl class="source-context">${sourceContext}</dl>
+    </section>
+    ${reasonRows}
+    <section class="alert-detail-section">
+      <h4>Log detail</h4>
+      <div class="alert-log-detail">${logMarkup}</div>
+    </section>
   `;
+}
+
+function clearSelectedAlert(message) {
+  evidenceDetail.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
 }
 
 function sourceContextRows(finding) {
@@ -190,6 +205,33 @@ function sourceContextRows(finding) {
       `
     )
     .join("");
+}
+
+function reasonContextRows(finding) {
+  const fields = [
+    ["Severity reason", finding.severity_reason],
+    ["Confidence reason", finding.confidence_reason],
+  ];
+  const rows = fields
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .map(
+      ([label, value]) => `
+        <div>
+          <dt>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(String(value))}</dd>
+        </div>
+      `
+    )
+    .join("");
+  if (!rows) {
+    return "";
+  }
+  return `
+    <section class="alert-detail-section">
+      <h4>Reasoning</h4>
+      <dl class="source-context">${rows}</dl>
+    </section>
+  `;
 }
 
 function renderInsights(insights) {
@@ -237,7 +279,7 @@ function renderError(message) {
   metrics.high.textContent = "0";
   queueCount.textContent = "0 items";
   findingList.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
-  evidenceDetail.innerHTML = '<p class="empty-state">Select local material and run analysis.</p>';
+  clearSelectedAlert("Select local material and run analysis.");
   insightList.innerHTML = '<li class="empty-state">Insights appear after analysis.</li>';
   resetCharts();
   toggleExports(false);

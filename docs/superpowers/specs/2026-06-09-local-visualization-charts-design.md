@@ -2,6 +2,8 @@
 comet_change: add-local-visualization-charts
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-09-add-local-visualization-charts
+status: final
 ---
 
 # Local Visualization Charts Technical Design

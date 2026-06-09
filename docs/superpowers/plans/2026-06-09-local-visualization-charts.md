@@ -2,6 +2,7 @@
 change: add-local-visualization-charts
 design-doc: docs/superpowers/specs/2026-06-09-local-visualization-charts-design.md
 base-ref: 3ca960d6385ff9857316212dd1db8f35df290a45
+archived-with: 2026-06-09-add-local-visualization-charts
 ---
 
 # Local Visualization Charts Implementation Plan
@@ -13,8 +14,6 @@ base-ref: 3ca960d6385ff9857316212dd1db8f35df290a45
 **Architecture:** Keep the existing Flask API shape and derive chart data in the static frontend from `/api/analyze`. Add passive behavior-rule coverage in `logcheck/rules.py`, a richer `samples/incident.log`, and tests that prove the UI remains local-only and responsive-ready.
 
 **Tech Stack:** Python 3.11, Flask, pytest/unittest, plain HTML/CSS/JavaScript, no external chart library.
-
----
 
 ## File Map
 
@@ -28,8 +27,6 @@ base-ref: 3ca960d6385ff9857316212dd1db8f35df290a45
 - Modify `tests/test_webapp.py`: assert dashboard chart region, chart labels, local-only safety, and script hooks.
 - Modify `docs/web-frontend-verification.md`: record chart, privilege-escalation, and incident-sample verification evidence.
 - Modify `openspec/changes/add-local-visualization-charts/tasks.md`: check off completed implementation tasks.
-
----
 
 ### Task 1: Privilege-Escalation Rule Coverage
 
@@ -164,8 +161,6 @@ git add logcheck/rules.py tests/test_rules.py
 git commit -m "feat: highlight privilege escalation indicators"
 ```
 
----
-
 ### Task 2: Rich Incident Sample
 
 **Files:**
@@ -244,8 +239,6 @@ Expected: PASS.
 git add samples/incident.log tests/test_samples.py
 git commit -m "test: add rich incident sample coverage"
 ```
-
----
 
 ### Task 3: Dashboard Visual Report Markup and Tests
 
@@ -333,8 +326,6 @@ Expected: PASS.
 git add logcheck/web_static/index.html tests/test_webapp.py
 git commit -m "feat: add visual report dashboard region"
 ```
-
----
 
 ### Task 4: Frontend Chart Helpers and Rendering
 
@@ -511,8 +502,6 @@ git add logcheck/web_static/app.js tests/test_webapp.py
 git commit -m "feat: render local chart summaries"
 ```
 
----
-
 ### Task 5: Chart Styling and Local-Only Regression
 
 **Files:**
@@ -648,8 +637,6 @@ git add logcheck/web_static/styles.css tests/test_webapp.py
 git commit -m "style: add responsive local chart layout"
 ```
 
----
-
 ### Task 6: Course Evidence and Final Verification
 
 **Files:**
@@ -699,8 +686,6 @@ git add docs/web-frontend-verification.md openspec/changes/add-local-visualizati
 git commit -m "docs: record local visualization verification"
 ```
 
----
-
 ## Self-Review
 
 Spec coverage:
@@ -710,4 +695,3 @@ Spec coverage:
 - Safety and verification are covered by Tasks 5 and 6.
 
 No placeholders are intentionally left in this plan. Commands and expected outcomes are specified for every task.
-

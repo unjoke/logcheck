@@ -14,7 +14,7 @@ Verification mode: full
 ## Automated Checks
 
 - `python -m pytest tests -q`
-  - Result: PASS, `76 passed in 0.58s`
+  - Result: PASS, `76 passed in 0.74s`
 - `node --check logcheck/web_static/app.js`
   - Result: PASS
 - `openspec validate add-local-visualization-charts --strict`
@@ -57,4 +57,3 @@ The browser text search saw `url` only because incident evidence contains a `cur
 ## Result
 
 PASS. The implementation satisfies the OpenSpec scenarios and the technical design acceptance criteria.
-

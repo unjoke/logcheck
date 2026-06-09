@@ -192,13 +192,15 @@ def test_dashboard_script_clears_stale_selected_alert_when_no_findings():
     )
 
 
-def test_dashboard_script_uses_actual_timeline_fields():
+def test_dashboard_script_keeps_timeline_fields_out_of_concise_insights():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
-    assert "item.detail" not in script
-    assert "item.summary" not in script
+    normalize_insights = script_function_body(script, "normalizeInsights")
+    assert "item.detail" not in normalize_insights
+    assert "item.summary" not in normalize_insights
     for field in ["item.severity", "item.rule_id", "item.entity", "item.source"]:
-        assert field in script
+        assert field not in normalize_insights
+    assert "timeline[index] && timeline[index].label" in script
 
 
 def test_dashboard_script_includes_local_chart_helpers():

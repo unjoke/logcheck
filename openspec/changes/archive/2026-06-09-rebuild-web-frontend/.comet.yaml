@@ -13,6 +13,6 @@ verification_report: docs/superpowers/reports/2026-06-07-rebuild-web-frontend-ve
 branch_status: handled
 created_at: 2026-06-07
 verified_at: 2026-06-08
-archived: false
+archived: true
 handoff_context: openspec/changes/rebuild-web-frontend/.comet/handoff/design-context.json
 handoff_hash: 3f4714114a76d00e9c285965715e26b38900bcd8d82ff7ca680c1964737aab15

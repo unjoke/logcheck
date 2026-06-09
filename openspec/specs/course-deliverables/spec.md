@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define coursework evidence expectations for local Logcheck iterations, including automated verification, browser review, and local-only safety evidence.
+
+## Requirements
 
 ### Requirement: Demonstrate comprehensive local iteration
 The project SHALL include evidence that the comprehensive iteration improves frontend polish, backend analysis behavior, reports, and local safety.

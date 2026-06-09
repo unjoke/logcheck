@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define local report export behavior for insights, source context, and existing JSON, CSV, and Markdown compatibility.
+
+## Requirements
 
 ### Requirement: Export local insight summaries
 The report export capability SHALL include local investigation insights in supported report formats.

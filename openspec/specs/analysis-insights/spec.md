@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Generate local investigation insight summaries, entity profiles, timelines, and safe remediation suggestions from parsed log events and findings.
+
+## Requirements
 
 ### Requirement: Generate local investigation insights
 The system SHALL generate local investigation insights from parsed events and detected findings without using network access or external services.

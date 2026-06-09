@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define local intrusion detection rule behavior, severity explanation, confidence explanation, and safe enhanced rule configuration.
+
+## Requirements
 
 ### Requirement: Detect configurable behavior patterns
 The intrusion detection rules capability SHALL detect configurable behavior patterns beyond individual keyword matches.

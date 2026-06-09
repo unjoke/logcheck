@@ -2,6 +2,7 @@
 change: rebuild-web-frontend
 design-doc: docs/superpowers/specs/2026-06-07-rebuild-web-frontend-technical-design.md
 base-ref: f9a1d1b18623222f2c000a5ade464f3304c0e82b
+archived-with: 2026-06-09-rebuild-web-frontend
 ---
 
 # Rebuild Web Frontend Implementation Plan

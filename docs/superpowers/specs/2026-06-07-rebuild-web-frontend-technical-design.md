@@ -2,6 +2,8 @@
 comet_change: rebuild-web-frontend
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-09-rebuild-web-frontend
+status: final
 ---
 
 # Rebuild Web Frontend Technical Design

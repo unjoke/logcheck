@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Define local log ingestion behavior for batch diagnostics and normalized event source context.
+
+## Requirements
 
 ### Requirement: Report local batch ingestion diagnostics
 The log ingestion capability SHALL report diagnostics for local batch inputs while continuing to parse readable files.

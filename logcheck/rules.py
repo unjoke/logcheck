@@ -19,6 +19,7 @@ def detect_findings(events: list[Event], config: DetectionConfig) -> list[Findin
     findings: list[Finding] = []
     findings.extend(_keyword_findings(events, config))
     findings.extend(_suspicious_command_findings(events, config))
+    findings.extend(_privilege_escalation_findings(events))
     findings.extend(_brute_force_findings(events, config))
     findings.extend(_multi_signal_findings(findings))
     return findings
@@ -80,6 +81,53 @@ def _suspicious_command_findings(events: list[Event], config: DetectionConfig) -
                     )
                 )
                 break
+    return findings
+
+
+PRIVILEGE_ESCALATION_INDICATORS = (
+    "sudo:auth",
+    "sudo failure",
+    "su:auth",
+    "authentication failure; user=root",
+    "/etc/shadow",
+    "/root",
+    "/admin",
+)
+
+
+def _privilege_escalation_findings(events: list[Event]) -> list[Finding]:
+    findings: list[Finding] = []
+    for event in events:
+        text = _event_text(event)
+        matched = next(
+            (
+                indicator
+                for indicator in PRIVILEGE_ESCALATION_INDICATORS
+                if indicator.lower() in text
+            ),
+            None,
+        )
+        if matched is None:
+            continue
+        findings.append(
+            Finding(
+                rule_id="behavior.privilege_escalation",
+                severity="high",
+                explanation="Privilege escalation indicator observed in local log evidence.",
+                evidence=[event.raw_line],
+                source_file=event.source_file,
+                line_number=event.line_number,
+                timestamp=event.timestamp,
+                source_address=event.source_address,
+                actor=event.actor,
+                target=event.target,
+                matched_keyword=matched,
+                severity_reason="Privilege escalation indicators are high priority for local review.",
+                confidence_reason=(
+                    "Exact configured privilege-escalation indicator matched the event text."
+                ),
+            )
+        )
     return findings
 
 

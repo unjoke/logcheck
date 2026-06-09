@@ -103,6 +103,50 @@ class RuleTests(unittest.TestCase):
         self.assertIsNotNone(suspicious[0].severity_reason)
         self.assertIsNotNone(suspicious[0].confidence_reason)
 
+    def test_sudo_failure_creates_privilege_escalation_finding(self):
+        event = Event(
+            source_file="auth.log",
+            line_number=1,
+            raw_line="Jun  2 10:03:01 ubuntu sudo: pam_unix(sudo:auth): authentication failure; user=root",
+            category="auth",
+            actor="root",
+            message="pam_unix(sudo:auth): authentication failure; user=root",
+        )
+
+        findings = detect_findings([event], default_config())
+
+        privilege = [
+            finding
+            for finding in findings
+            if finding.rule_id == "behavior.privilege_escalation"
+        ]
+        self.assertEqual(len(privilege), 1)
+        self.assertEqual(privilege[0].severity, "high")
+        self.assertIn("Privilege escalation", privilege[0].explanation)
+        self.assertEqual(privilege[0].line_number, 1)
+        self.assertIsNotNone(privilege[0].severity_reason)
+        self.assertIsNotNone(privilege[0].confidence_reason)
+
+    def test_sensitive_path_creates_privilege_escalation_finding(self):
+        event = Event(
+            source_file="app.log",
+            line_number=2,
+            raw_line="2026-06-02 10:04:00 ERROR permission denied user=guest ip=198.51.100.7 path=/etc/shadow",
+            category="application",
+            actor="guest",
+            source_address="198.51.100.7",
+            message="permission denied user=guest ip=198.51.100.7 path=/etc/shadow",
+        )
+
+        findings = detect_findings([event], default_config())
+
+        self.assertTrue(
+            any(
+                finding.rule_id == "behavior.privilege_escalation"
+                for finding in findings
+            )
+        )
+
     def test_multi_signal_actor_creates_correlated_behavior_finding(self):
         events = [
             Event(

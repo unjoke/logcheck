@@ -13,7 +13,7 @@
 
 ## 3. Detection Research Adaptation
 
-- [ ] 3.1 Document the specific LogAI, LogPAI/logparser/Drain, and LogBERT-inspired ideas being adapted as lightweight local heuristics.
+- [x] 3.1 Document the specific LogAI, LogPAI/logparser/Drain, and LogBERT-inspired ideas being adapted as lightweight local heuristics.
 - [x] 3.2 Add tests for normalized-template burst detection using repeated local log messages with variable tokens.
 - [x] 3.3 Add tests for suspicious local behavior sequence detection, including a non-matching outside-window case.
 - [x] 3.4 Add tests for behavior-rule configuration validation, including invalid thresholds and unsupported fields.

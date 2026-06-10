@@ -6,6 +6,7 @@ const state = {
 const form = document.querySelector("#analysis-form");
 const fileInput = document.querySelector("#log-files");
 const sampleSelect = document.querySelector("#sample-select");
+const runButton = document.querySelector("#run-analysis");
 const runState = document.querySelector("#run-state");
 const findingList = document.querySelector("#finding-list");
 const queueCount = document.querySelector("#queue-count");
@@ -85,6 +86,7 @@ async function runAnalysis() {
 
   setRunState("Running");
   toggleExports(false);
+  runButton.disabled = true;
 
   try {
     const response = await fetch("/api/analyze", {
@@ -104,7 +106,10 @@ async function runAnalysis() {
     state.latestAnalysisId = "";
     state.findings = [];
     renderError(error.message || "Analysis failed.");
-    setRunState("Needs input");
+    toggleExports(false);
+    setRunState("Needs attention");
+  } finally {
+    runButton.disabled = false;
   }
 }
 

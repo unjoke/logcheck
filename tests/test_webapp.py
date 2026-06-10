@@ -231,6 +231,25 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     assert "analysis_id=${analysisId}" in export_target.group(1)
 
 
+def test_dashboard_script_clears_stale_analysis_id_on_analysis_failure():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    run_analysis = script_function_body(script, "runAnalysis")
+
+    catch_block = re.search(r"} catch \(error\) \{(?P<body>.*?)\n  \} finally \{", run_analysis, re.S)
+
+    assert catch_block is not None
+    assert 'state.latestAnalysisId = "";' in catch_block.group("body")
+    assert "toggleExports(false);" in catch_block.group("body")
+
+
+def test_dashboard_export_buttons_are_disabled_until_analysis_id_exists():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "toggleExports(false);" in script
+    assert "toggleExports(Boolean(state.latestAnalysisId));" in script
+    assert "if (!state.latestAnalysisId)" in script
+
+
 def test_dashboard_styles_include_responsive_chart_rules():
     styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
 

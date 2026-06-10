@@ -24,8 +24,8 @@ DEFAULT_MAX_UPLOAD_FILES = 8
 def create_app(sample_dir: Path | None = None, upload_dir: Path | None = None) -> Flask:
     static_dir = Path(__file__).with_name("web_static")
     app = Flask(__name__, static_folder=static_dir, static_url_path="")
-    app.config["SAMPLE_DIR"] = sample_dir or Path("samples")
-    app.config["UPLOAD_DIR"] = upload_dir or Path("worktmp") / "web_uploads"
+    app.config["SAMPLE_DIR"] = Path(sample_dir or "samples").resolve()
+    app.config["UPLOAD_DIR"] = Path(upload_dir or Path("worktmp") / "web_uploads").resolve()
     app.config["MAX_CONTENT_LENGTH"] = DEFAULT_MAX_CONTENT_LENGTH
     app.config["MAX_UPLOAD_FILES"] = DEFAULT_MAX_UPLOAD_FILES
     app.config["ANALYSIS_RESULTS"] = {}

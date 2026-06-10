@@ -436,6 +436,29 @@ def test_export_markdown_after_analysis_with_analysis_id(tmp_path):
     assert "Log Intrusion Analysis Report" in response.get_data(as_text=True)
 
 
+def test_export_with_relative_upload_dir_after_analysis(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    sample_dir = tmp_path / "samples"
+    sample_dir.mkdir()
+    (sample_dir / "auth.log").write_text(
+        "Jun  1 10:00:00 host sshd[1]: Failed password for root from 192.0.2.10 port 22 ssh2\n",
+        encoding="utf-8",
+    )
+    client = create_app(sample_dir=sample_dir, upload_dir=Path("relative_uploads")).test_client()
+    analyze = client.post(
+        "/api/analyze",
+        data={"sample_ids": "auth.log"},
+        content_type="multipart/form-data",
+    )
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/json?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/json"
+    assert b"findings" in response.data
+
+
 def test_export_markdown_sets_download_filename(tmp_path):
     client = make_app(tmp_path)
     analyze = client.post(

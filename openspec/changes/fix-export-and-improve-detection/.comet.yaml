@@ -1,7 +1,7 @@
 workflow: full
 phase: build
-build_mode: null
-isolation: null
+build_mode: subagent-driven-development
+isolation: worktree
 verify_mode: null
 base_ref: 2a0237fbd5600e9aa94db9df44d9082161dccc30
 design_doc: docs/superpowers/specs/2026-06-10-fix-export-and-improve-detection-design.md

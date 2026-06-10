@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -245,6 +246,89 @@ class RuleTests(unittest.TestCase):
 
         self.assertFalse(
             any(finding.rule_id == "behavior.template_burst" for finding in findings)
+        )
+
+    def test_auth_to_privilege_sequence_creates_correlated_finding(self):
+        start = datetime(2026, 6, 10, 10, 0, 0)
+        config = DetectionConfig(
+            keywords=default_config().keywords,
+            sequence_window_minutes=10,
+        )
+        events = [
+            Event(
+                "auth.log",
+                1,
+                "Jun 10 10:00:00 host sshd[1]: Failed password for admin from 192.0.2.10 port 22 ssh2",
+                timestamp=start,
+                category="auth",
+                source_address="192.0.2.10",
+                actor="admin",
+                message="Failed password for admin from 192.0.2.10",
+            ),
+            Event(
+                "auth.log",
+                2,
+                "Jun 10 10:03:00 host sudo: pam_unix(sudo:auth): authentication failure; user=root",
+                timestamp=start + timedelta(minutes=3),
+                category="auth",
+                source_address="192.0.2.10",
+                actor="admin",
+                target="root",
+                message="sudo:auth authentication failure user=root",
+            ),
+        ]
+
+        findings = detect_findings(events, config)
+        sequence = [
+            finding
+            for finding in findings
+            if finding.rule_id == "behavior.auth_to_privilege_sequence"
+        ]
+
+        self.assertEqual(len(sequence), 1)
+        self.assertEqual(sequence[0].source_address, "192.0.2.10")
+        self.assertEqual(sequence[0].count, 2)
+        self.assertEqual(len(sequence[0].evidence), 2)
+        self.assertIsNotNone(sequence[0].severity_reason)
+        self.assertIsNotNone(sequence[0].confidence_reason)
+
+    def test_auth_to_privilege_sequence_respects_window(self):
+        start = datetime(2026, 6, 10, 10, 0, 0)
+        config = DetectionConfig(
+            keywords=default_config().keywords,
+            sequence_window_minutes=10,
+        )
+        events = [
+            Event(
+                "auth.log",
+                1,
+                "Failed password for admin from 192.0.2.10",
+                timestamp=start,
+                category="auth",
+                source_address="192.0.2.10",
+                actor="admin",
+                message="Failed password for admin from 192.0.2.10",
+            ),
+            Event(
+                "auth.log",
+                2,
+                "sudo:auth authentication failure user=root",
+                timestamp=start + timedelta(minutes=30),
+                category="auth",
+                source_address="192.0.2.10",
+                actor="admin",
+                target="root",
+                message="sudo:auth authentication failure user=root",
+            ),
+        ]
+
+        findings = detect_findings(events, config)
+
+        self.assertFalse(
+            any(
+                finding.rule_id == "behavior.auth_to_privilege_sequence"
+                for finding in findings
+            )
         )
 
     def test_json_rule_file_is_loaded(self):

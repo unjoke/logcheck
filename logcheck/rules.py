@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
 import re
 
 from .models import DetectionConfig, Event, Finding
@@ -31,6 +32,7 @@ SUSPICIOUS_TEMPLATE_TERMS = (
     "nc -e",
     "bash -i",
 )
+AUTH_FAILURE_TERMS = ("failed password", "failed login", "authentication failure")
 
 
 def detect_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
@@ -40,6 +42,7 @@ def detect_findings(events: list[Event], config: DetectionConfig) -> list[Findin
     findings.extend(_privilege_escalation_findings(events))
     findings.extend(_brute_force_findings(events, config))
     findings.extend(_template_burst_findings(events, config))
+    findings.extend(_auth_to_privilege_sequence_findings(events, config))
     findings.extend(_multi_signal_findings(findings))
     return findings
 
@@ -62,6 +65,31 @@ def _normalize_template(text: str) -> str:
 def _is_suspicious_template(text: str) -> bool:
     lowered = text.lower()
     return any(term in lowered for term in SUSPICIOUS_TEMPLATE_TERMS)
+
+
+def _is_auth_failure(event: Event) -> bool:
+    text = _event_text(event)
+    return any(term in text for term in AUTH_FAILURE_TERMS)
+
+
+def _is_privilege_signal(event: Event) -> bool:
+    text = _event_text(event)
+    return any(indicator.lower() in text for indicator in PRIVILEGE_ESCALATION_INDICATORS)
+
+
+def _entity_keys(event: Event) -> list[tuple[str, str]]:
+    if event.source_address:
+        return [("source", event.source_address)]
+    if event.actor:
+        return [("actor", event.actor)]
+    return []
+
+
+def _within_window(first: Event, second: Event, window_minutes: int) -> bool:
+    if first.timestamp is None or second.timestamp is None:
+        return second.line_number > first.line_number
+    delta = second.timestamp - first.timestamp
+    return timedelta(0) < delta <= timedelta(minutes=window_minutes)
 
 
 def _keyword_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
@@ -237,6 +265,71 @@ def _template_burst_findings(events: list[Event], config: DetectionConfig) -> li
                 confidence_reason=(
                     "Variable tokens were normalized and repeated raw local evidence matched "
                     "the same suspicious template."
+                ),
+            )
+        )
+    return findings
+
+
+def _auth_to_privilege_sequence_findings(
+    events: list[Event], config: DetectionConfig
+) -> list[Finding]:
+    if not config.behavior_enabled:
+        return []
+
+    auth_by_entity: dict[tuple[str, str], list[Event]] = defaultdict(list)
+    privilege_by_entity: dict[tuple[str, str], list[Event]] = defaultdict(list)
+    for event in events:
+        for key in _entity_keys(event):
+            if _is_auth_failure(event):
+                auth_by_entity[key].append(event)
+            if _is_privilege_signal(event):
+                privilege_by_entity[key].append(event)
+
+    findings: list[Finding] = []
+    seen_entities: set[tuple[str, str]] = set()
+    for key, auth_events in auth_by_entity.items():
+        privilege_events = privilege_by_entity.get(key, [])
+        if not privilege_events:
+            continue
+        match = next(
+            (
+                (auth_event, privilege_event)
+                for auth_event in auth_events
+                for privilege_event in privilege_events
+                if _within_window(auth_event, privilege_event, config.sequence_window_minutes)
+            ),
+            None,
+        )
+        if match is None:
+            continue
+        if key in seen_entities:
+            continue
+        seen_entities.add(key)
+        first_auth, first_privilege = match
+        entity_type, entity = key
+        findings.append(
+            Finding(
+                rule_id="behavior.auth_to_privilege_sequence",
+                severity="high",
+                explanation=(
+                    f"{entity_type.title()} {entity} showed failed authentication followed "
+                    "by privilege-escalation evidence in local logs."
+                ),
+                evidence=[first_auth.raw_line, first_privilege.raw_line],
+                source_file=first_auth.source_file,
+                line_number=first_auth.line_number,
+                timestamp=first_auth.timestamp,
+                source_address=entity if entity_type == "source" else first_auth.source_address,
+                actor=entity if entity_type == "actor" else first_auth.actor,
+                target=first_privilege.target,
+                count=2,
+                severity_reason=(
+                    "Authentication failure followed by privilege-escalation evidence raises "
+                    "local review priority."
+                ),
+                confidence_reason=(
+                    "Both stages were observed in raw local log evidence for the same entity."
                 ),
             )
         )

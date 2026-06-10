@@ -1,6 +1,6 @@
 workflow: full
 phase: build
-build_mode: subagent-driven-development
+build_mode: executing-plans
 isolation: worktree
 verify_mode: null
 base_ref: 2a0237fbd5600e9aa94db9df44d9082161dccc30

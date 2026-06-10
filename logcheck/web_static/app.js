@@ -37,15 +37,57 @@ form.addEventListener("submit", async (event) => {
 });
 
 exportButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (!state.latestAnalysisId) {
-      return;
-    }
-    const format = button.dataset.format;
-    const analysisId = encodeURIComponent(state.latestAnalysisId);
-    window.location.assign(`/api/exports/${format}?analysis_id=${analysisId}`);
+  button.addEventListener("click", async () => {
+    await downloadExport(button);
   });
 });
+
+async function downloadExport(button) {
+  if (!state.latestAnalysisId) {
+    setRunState("Run analysis before exporting.");
+    return;
+  }
+
+  const format = button.dataset.format;
+  const analysisId = encodeURIComponent(state.latestAnalysisId);
+  const url = `/api/exports/${format}?analysis_id=${analysisId}`;
+  button.disabled = true;
+  setRunState("Exporting");
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      let message = "Export failed.";
+      try {
+        const payload = await response.json();
+        message = payload.error || message;
+      } catch (error) {
+        message = "Export failed.";
+      }
+      throw new Error(message);
+    }
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = exportFilename(format);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(downloadUrl);
+    setRunState("Export complete");
+  } catch (error) {
+    setRunState(error.message || "Export failed.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function exportFilename(format) {
+  if (format === "markdown") {
+    return "analysis.md";
+  }
+  return `analysis.${format}`;
+}
 
 async function loadSamples() {
   try {

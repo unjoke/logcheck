@@ -225,10 +225,9 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     fetch_targets = re.findall(r"fetch\(\s*([\"'`])([^\"'`]+)\1", script)
     assert {target for _, target in fetch_targets} == {"/api/samples", "/api/analyze"}
 
-    export_target = re.search(r"window\.location\.assign\(\s*`([^`]+)`\s*\)", script)
-    assert export_target is not None
-    assert export_target.group(1).startswith("/api/exports/")
-    assert "analysis_id=${analysisId}" in export_target.group(1)
+    download_export = script_function_body(script, "downloadExport")
+    assert "`/api/exports/${format}?analysis_id=${analysisId}`" in download_export
+    assert "fetch(url)" in download_export
 
 
 def test_dashboard_script_clears_stale_analysis_id_on_analysis_failure():
@@ -248,6 +247,27 @@ def test_dashboard_export_buttons_are_disabled_until_analysis_id_exists():
     assert "toggleExports(false);" in script
     assert "toggleExports(Boolean(state.latestAnalysisId));" in script
     assert "if (!state.latestAnalysisId)" in script
+
+
+def test_dashboard_export_failure_is_reported_locally():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    download_export = script_function_body(script, "downloadExport")
+
+    assert "if (!response.ok)" in download_export
+    assert "const payload = await response.json();" in download_export
+    assert "throw new Error(message);" in download_export
+    assert 'setRunState(error.message || "Export failed.");' in download_export
+
+
+def test_dashboard_export_downloads_blob_with_supported_filename():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    download_export = script_function_body(script, "downloadExport")
+    export_filename = script_function_body(script, "exportFilename")
+
+    assert "URL.createObjectURL(blob)" in download_export
+    assert "link.download = exportFilename(format);" in download_export
+    assert 'return "analysis.md";' in export_filename
+    assert "return `analysis.${format}`;" in export_filename
 
 
 def test_dashboard_styles_include_responsive_chart_rules():

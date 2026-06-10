@@ -342,6 +342,22 @@ def test_export_json_after_analysis(tmp_path):
     assert b"findings" in response.data
 
 
+def test_export_json_sets_download_filename(tmp_path):
+    client = make_app(tmp_path)
+    analyze = client.post(
+        "/api/analyze",
+        data={"sample_ids": "auth.log"},
+        content_type="multipart/form-data",
+    )
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/json?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert "attachment" in response.headers["Content-Disposition"]
+    assert "analysis.json" in response.headers["Content-Disposition"]
+
+
 def test_export_csv_after_analysis_with_analysis_id(tmp_path):
     client = make_app(tmp_path)
     analyze = client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
@@ -354,6 +370,21 @@ def test_export_csv_after_analysis_with_analysis_id(tmp_path):
     assert "rule_id,severity" in response.get_data(as_text=True)
 
 
+def test_export_csv_sets_download_filename(tmp_path):
+    client = make_app(tmp_path)
+    analyze = client.post(
+        "/api/analyze",
+        data={"sample_ids": "auth.log"},
+        content_type="multipart/form-data",
+    )
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/csv?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert "analysis.csv" in response.headers["Content-Disposition"]
+
+
 def test_export_markdown_after_analysis_with_analysis_id(tmp_path):
     client = make_app(tmp_path)
     analyze = client.post("/api/analyze", data={"sample_ids": "auth.log"}, content_type="multipart/form-data")
@@ -364,6 +395,21 @@ def test_export_markdown_after_analysis_with_analysis_id(tmp_path):
     assert response.status_code == 200
     assert response.mimetype == "text/markdown"
     assert "Log Intrusion Analysis Report" in response.get_data(as_text=True)
+
+
+def test_export_markdown_sets_download_filename(tmp_path):
+    client = make_app(tmp_path)
+    analyze = client.post(
+        "/api/analyze",
+        data={"sample_ids": "auth.log"},
+        content_type="multipart/form-data",
+    )
+    analysis_id = analyze.get_json()["analysis_id"]
+
+    response = client.get(f"/api/exports/markdown?analysis_id={analysis_id}")
+
+    assert response.status_code == 200
+    assert "analysis.md" in response.headers["Content-Disposition"]
 
 
 def test_export_requires_analysis_id_after_analysis(tmp_path):
@@ -383,6 +429,15 @@ def test_export_rejects_unknown_analysis_id(tmp_path):
 
     assert response.status_code == 400
     assert "analysis must run" in response.get_json()["error"].lower()
+
+
+def test_export_rejects_unsupported_format(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/api/exports/pdf?analysis_id=anything")
+
+    assert response.status_code == 404
+    assert "unsupported export format" in response.get_json()["error"].lower()
 
 
 def test_analyze_rejects_more_than_configured_uploaded_files(tmp_path):

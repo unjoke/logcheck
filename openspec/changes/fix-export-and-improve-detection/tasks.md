@@ -2,14 +2,14 @@
 
 - [x] 1.1 Add API regression tests for successful JSON, CSV, and Markdown export downloads after a web analysis run.
 - [x] 1.2 Add API tests for unsupported export format, missing analysis id, and unknown or stale analysis id.
-- [x] 1.3 Add frontend test coverage or browser verification for export buttons before analysis, after analysis, and after export errors.
+- [ ] 1.3 Add frontend test coverage or browser verification for export buttons before analysis, after analysis, and after export errors.
 
 ## 2. Export Fix
 
 - [x] 2.1 Audit the current frontend export button handler and backend `/api/exports/<fmt>` route to identify the failing path.
 - [ ] 2.2 Fix backend export handling so report files are created under the local worktmp export directory and served with stable filenames/content types.
 - [x] 2.3 Fix frontend export invocation so the latest successful `analysis_id` is included and stale state is cleared or handled correctly.
-- [x] 2.4 Add clear local error handling for export failures without introducing remote/network behavior.
+- [ ] 2.4 Add clear local error handling for export failures without introducing remote/network behavior.
 
 ## 3. Detection Research Adaptation
 

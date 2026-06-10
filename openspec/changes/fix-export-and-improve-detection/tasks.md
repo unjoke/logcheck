@@ -27,7 +27,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run the Python test suite covering parsers, rules, exporters, CLI, and web API.
-- [ ] 5.2 Run JavaScript syntax/static checks for the web frontend.
-- [ ] 5.3 Run the local web dashboard and verify export downloads work from the browser for JSON, CSV, and Markdown.
-- [ ] 5.4 Verify the UI still has no URL/domain inputs, remote fetching, scanning, blocking, exploitation, or external reporting controls.
+- [x] 5.1 Run the Python test suite covering parsers, rules, exporters, CLI, and web API.
+- [x] 5.2 Run JavaScript syntax/static checks for the web frontend.
+- [x] 5.3 Run the local web dashboard and verify export downloads work from the browser for JSON, CSV, and Markdown.
+- [x] 5.4 Verify the UI still has no URL/domain inputs, remote fetching, scanning, blocking, exploitation, or external reporting controls.

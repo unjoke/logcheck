@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import re
 
 from .models import DetectionConfig, Event, Finding
 
@@ -13,6 +14,23 @@ SEVERITY_BY_RULE = {
     "sudo_failure": "high",
     "suspicious_command": "critical",
 }
+SUSPICIOUS_TEMPLATE_TERMS = (
+    "failed password",
+    "failed login",
+    "authentication failure",
+    "invalid user",
+    "unauthorized access",
+    "permission denied",
+    "sudo",
+    "su:",
+    "/etc/shadow",
+    "/root",
+    "/admin",
+    "curl http",
+    "wget http",
+    "nc -e",
+    "bash -i",
+)
 
 
 def detect_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
@@ -21,12 +39,29 @@ def detect_findings(events: list[Event], config: DetectionConfig) -> list[Findin
     findings.extend(_suspicious_command_findings(events, config))
     findings.extend(_privilege_escalation_findings(events))
     findings.extend(_brute_force_findings(events, config))
+    findings.extend(_template_burst_findings(events, config))
     findings.extend(_multi_signal_findings(findings))
     return findings
 
 
 def _event_text(event: Event) -> str:
     return f"{event.raw_line}\n{event.message or ''}".lower()
+
+
+def _normalize_template(text: str) -> str:
+    template = text.lower()
+    template = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "<ip>", template)
+    template = re.sub(r"\b[0-9a-f]{12,}\b", "<hex>", template)
+    template = re.sub(r"(['\"])(?:(?=(\\?))\2.)*?\1", "<quoted>", template)
+    template = re.sub(r"/[a-z0-9_./-]+", "<path>", template)
+    template = re.sub(r"\b\d+\b", "<num>", template)
+    template = re.sub(r"\s+", " ", template).strip()
+    return template
+
+
+def _is_suspicious_template(text: str) -> bool:
+    lowered = text.lower()
+    return any(term in lowered for term in SUSPICIOUS_TEMPLATE_TERMS)
 
 
 def _keyword_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
@@ -160,6 +195,51 @@ def _brute_force_findings(events: list[Event], config: DetectionConfig) -> list[
                     count=len(bucket),
                 )
             )
+    return findings
+
+
+def _template_burst_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
+    if not config.behavior_enabled:
+        return []
+
+    buckets: dict[tuple[str, str], list[Event]] = defaultdict(list)
+    for event in events:
+        text = _event_text(event)
+        if not _is_suspicious_template(text):
+            continue
+        entity = event.source_address or event.actor or "unknown"
+        buckets[(entity, _normalize_template(text))].append(event)
+
+    findings: list[Finding] = []
+    for (entity, template), bucket in buckets.items():
+        if len(bucket) < config.template_burst_threshold:
+            continue
+        first = bucket[0]
+        findings.append(
+            Finding(
+                rule_id="behavior.template_burst",
+                severity="high",
+                explanation=(
+                    f"{len(bucket)} suspicious local events matched normalized template "
+                    f"`{template}` for {entity}."
+                ),
+                evidence=[event.raw_line for event in bucket[:5]],
+                source_file=first.source_file,
+                line_number=first.line_number,
+                timestamp=first.timestamp,
+                source_address=first.source_address,
+                actor=first.actor,
+                target=first.target,
+                count=len(bucket),
+                severity_reason=(
+                    "Repeated suspicious template activity meets the configured burst threshold."
+                ),
+                confidence_reason=(
+                    "Variable tokens were normalized and repeated raw local evidence matched "
+                    "the same suspicious template."
+                ),
+            )
+        )
     return findings
 
 

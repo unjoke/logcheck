@@ -192,6 +192,61 @@ class RuleTests(unittest.TestCase):
             any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
         )
 
+    def test_template_burst_detects_repeated_variable_suspicious_events(self):
+        config = DetectionConfig(
+            keywords=default_config().keywords,
+            template_burst_threshold=3,
+        )
+        events = [
+            Event(
+                "app.log",
+                i,
+                f"2026-06-10 ERROR unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
+                category="application",
+                actor="guest",
+                source_address="192.0.2.10",
+                message=f"unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
+            )
+            for i in range(1, 4)
+        ]
+
+        findings = detect_findings(events, config)
+        burst = [
+            finding for finding in findings if finding.rule_id == "behavior.template_burst"
+        ]
+
+        self.assertEqual(len(burst), 1)
+        self.assertEqual(burst[0].count, 3)
+        self.assertEqual(burst[0].source_address, "192.0.2.10")
+        self.assertIn("unauthorized access", burst[0].explanation.lower())
+        self.assertIsNotNone(burst[0].severity_reason)
+        self.assertIsNotNone(burst[0].confidence_reason)
+        self.assertEqual(len(burst[0].evidence), 3)
+
+    def test_template_burst_ignores_repeated_events_below_threshold(self):
+        config = DetectionConfig(
+            keywords=default_config().keywords,
+            template_burst_threshold=4,
+        )
+        events = [
+            Event(
+                "app.log",
+                i,
+                f"2026-06-10 ERROR unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
+                category="application",
+                actor="guest",
+                source_address="192.0.2.10",
+                message=f"unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
+            )
+            for i in range(1, 4)
+        ]
+
+        findings = detect_findings(events, config)
+
+        self.assertFalse(
+            any(finding.rule_id == "behavior.template_burst" for finding in findings)
+        )
+
     def test_json_rule_file_is_loaded(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rules.json"

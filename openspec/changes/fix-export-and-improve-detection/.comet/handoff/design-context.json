@@ -1,0 +1,16 @@
+{
+  "change": "fix-export-and-improve-detection",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2c90d70ae586511ca58172a23d9e3bb7ee7c15ef07ea4d180b46ead2c74b49d5",
+  "files": [
+    { "path": "openspec/changes/fix-export-and-improve-detection/proposal.md", "sha256": "bc5f2f30c5935a668eecc85858e70b0bd7c16fbd9ecb529256654f783fa8bafc" },
+    { "path": "openspec/changes/fix-export-and-improve-detection/design.md", "sha256": "882d71b80bb3aa2a3a05fa2766b059ef9daa92639cacd1a45a459475d68de31f" },
+    { "path": "openspec/changes/fix-export-and-improve-detection/tasks.md", "sha256": "80821f8b14d8da3b079e633c17ba0c9e1190d6ff163b36713969ed3bb3fac941" },
+    { "path": "openspec/changes/fix-export-and-improve-detection/specs/intrusion-detection-rules/spec.md", "sha256": "297ac9f9c4b20e65d42135f156b55a9953e70bd924efbb2739d6a1ed60f96f8a" },
+    { "path": "openspec/changes/fix-export-and-improve-detection/specs/report-export/spec.md", "sha256": "9e7277ad5b1e900c0672e487e2ad6aceeb212f070b0d61558086ef599b79606e" },
+    { "path": "openspec/changes/fix-export-and-improve-detection/specs/web-frontend/spec.md", "sha256": "ce7c3d8e1bc23c17ca75247d25f5da2361b34db58f833ebb8135b43ce57727b7" }
+  ]
+}

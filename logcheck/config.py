@@ -7,6 +7,13 @@ import tomllib
 from .models import DetectionConfig
 
 
+SUPPORTED_BEHAVIOR_FIELDS = {
+    "enabled",
+    "template_burst_threshold",
+    "sequence_window_minutes",
+}
+
+
 def default_config() -> DetectionConfig:
     return DetectionConfig(
         keywords={
@@ -45,6 +52,8 @@ def load_config(path: Path | None) -> DetectionConfig:
     _validate_keywords(keywords)
     brute_force = data.get("brute_force", {})
     _validate_brute_force(brute_force)
+    behavior = data.get("behavior", {})
+    _validate_behavior(behavior)
     return DetectionConfig(
         keywords=keywords,
         brute_force_threshold=_parse_int(
@@ -53,6 +62,17 @@ def load_config(path: Path | None) -> DetectionConfig:
         brute_force_window_minutes=_parse_int(
             brute_force.get("window_minutes", base.brute_force_window_minutes),
             "brute_force.window_minutes",
+        ),
+        behavior_enabled=_parse_bool(
+            behavior.get("enabled", base.behavior_enabled), "behavior.enabled"
+        ),
+        template_burst_threshold=_parse_positive_int(
+            behavior.get("template_burst_threshold", base.template_burst_threshold),
+            "behavior.template_burst_threshold",
+        ),
+        sequence_window_minutes=_parse_positive_int(
+            behavior.get("sequence_window_minutes", base.sequence_window_minutes),
+            "behavior.sequence_window_minutes",
         ),
     )
 
@@ -86,9 +106,30 @@ def _validate_brute_force(brute_force: object) -> None:
         raise ValueError("brute_force must be an object")
 
 
+def _validate_behavior(behavior: object) -> None:
+    if not isinstance(behavior, dict):
+        raise ValueError("behavior must be an object")
+    unsupported = set(behavior) - SUPPORTED_BEHAVIOR_FIELDS
+    if unsupported:
+        raise ValueError(f"Unsupported behavior config field: {sorted(unsupported)[0]}")
+
+
 def _parse_int(value: object, field_name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _parse_positive_int(value: object, field_name: str) -> int:
+    parsed = _parse_int(value, field_name)
+    if parsed <= 0:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return parsed
+
+
+def _parse_bool(value: object, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
     return value
 
 
@@ -98,5 +139,10 @@ def config_to_dict(config: DetectionConfig) -> dict[str, object]:
         "brute_force": {
             "threshold": config.brute_force_threshold,
             "window_minutes": config.brute_force_window_minutes,
+        },
+        "behavior": {
+            "enabled": config.behavior_enabled,
+            "template_burst_threshold": config.template_burst_threshold,
+            "sequence_window_minutes": config.sequence_window_minutes,
         },
     }

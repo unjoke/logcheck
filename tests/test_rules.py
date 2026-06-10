@@ -215,6 +215,11 @@ class RuleTests(unittest.TestCase):
             {
                 "keywords": {"custom_rule": ["needle"]},
                 "brute_force": {"threshold": 3, "window_minutes": 7},
+                "behavior": {
+                    "enabled": True,
+                    "template_burst_threshold": 4,
+                    "sequence_window_minutes": 10,
+                },
             },
         )
 
@@ -231,6 +236,75 @@ class RuleTests(unittest.TestCase):
             reloaded = load_config(path)
 
         self.assertEqual(reloaded, original)
+
+    def test_behavior_rule_config_is_loaded(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "behavior": {
+                            "enabled": True,
+                            "template_burst_threshold": 3,
+                            "sequence_window_minutes": 15,
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            config = load_config(path)
+
+        self.assertTrue(config.behavior_enabled)
+        self.assertEqual(config.template_burst_threshold, 3)
+        self.assertEqual(config.sequence_window_minutes, 15)
+
+    def test_behavior_config_to_dict_can_be_reloaded_from_json(self):
+        original = DetectionConfig(
+            keywords={"custom_rule": ["needle"]},
+            brute_force_threshold=4,
+            brute_force_window_minutes=12,
+            behavior_enabled=True,
+            template_burst_threshold=3,
+            sequence_window_minutes=15,
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(json.dumps(config_to_dict(original)), encoding="utf-8")
+
+            reloaded = load_config(path)
+
+        self.assertEqual(reloaded, original)
+
+    def test_rule_config_rejects_invalid_behavior_values(self):
+        cases = [
+            {"enabled": "yes"},
+            {"template_burst_threshold": True},
+            {"template_burst_threshold": 0},
+            {"template_burst_threshold": 2.5},
+            {"sequence_window_minutes": False},
+            {"sequence_window_minutes": 0},
+            {"sequence_window_minutes": 7.5},
+        ]
+        for behavior in cases:
+            with self.subTest(behavior=behavior):
+                with TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "rules.json"
+                    path.write_text(json.dumps({"behavior": behavior}), encoding="utf-8")
+
+                    with self.assertRaises(ValueError):
+                        load_config(path)
+
+    def test_rule_config_rejects_unsupported_behavior_fields(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rules.json"
+            path.write_text(
+                json.dumps({"behavior": {"template_burst_threshold": 3, "mode": "remote"}}),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValueError):
+                load_config(path)
 
     def test_yaml_rule_file_is_loaded_when_yaml_is_available(self):
         if importlib.util.find_spec("yaml") is None:

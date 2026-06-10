@@ -62,6 +62,9 @@ class DetectionConfig:
     keywords: dict[str, list[str]]
     brute_force_threshold: int = 5
     brute_force_window_minutes: int = 10
+    behavior_enabled: bool = True
+    template_burst_threshold: int = 4
+    sequence_window_minutes: int = 10
 
 
 @dataclass

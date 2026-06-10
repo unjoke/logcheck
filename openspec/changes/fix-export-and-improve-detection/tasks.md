@@ -16,12 +16,12 @@
 - [ ] 3.1 Document the specific LogAI, LogPAI/logparser/Drain, and LogBERT-inspired ideas being adapted as lightweight local heuristics.
 - [ ] 3.2 Add tests for normalized-template burst detection using repeated local log messages with variable tokens.
 - [ ] 3.3 Add tests for suspicious local behavior sequence detection, including a non-matching outside-window case.
-- [ ] 3.4 Add tests for behavior-rule configuration validation, including invalid thresholds and unsupported fields.
+- [x] 3.4 Add tests for behavior-rule configuration validation, including invalid thresholds and unsupported fields.
 
 ## 4. Detection Implementation
 
 - [ ] 4.1 Add a small local template-normalization helper for rule logic while preserving original raw evidence.
-- [ ] 4.2 Extend `DetectionConfig` and config loading with validated behavior/template thresholds and windows.
+- [x] 4.2 Extend `DetectionConfig` and config loading with validated behavior/template thresholds and windows.
 - [ ] 4.3 Implement deterministic template-burst and sequence-correlation findings with severity and confidence reasons.
 - [ ] 4.4 Ensure new findings serialize and export with source context, evidence, severity reason, confidence reason, and counts.
 

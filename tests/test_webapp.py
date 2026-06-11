@@ -82,7 +82,7 @@ def test_dashboard_renders_visual_report_region(tmp_path):
     for text in [
         "Visual report",
         "Source/entity frequency",
-        "Time/evidence order",
+        "Time distribution",
         "Severity distribution",
     ]:
         assert text in html

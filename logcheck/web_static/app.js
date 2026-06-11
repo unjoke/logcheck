@@ -34,6 +34,7 @@ const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
   severity: document.querySelector("#severity-chart"),
+  attackerIps: document.querySelector("#attacker-ip-stats"),
 };
 
 const metrics = {
@@ -381,16 +382,85 @@ function fillFilter(element, emptyLabel, values) {
 }
 
 function aggregateAttackerIps(findings) {
-  return [];
+  const rows = new Map();
+  findings.forEach((finding, index) => {
+    if (!finding.source_address) {
+      return;
+    }
+    const key = finding.source_address;
+    if (!rows.has(key)) {
+      rows.set(key, {
+        source: key,
+        count: 0,
+        severities: new Map(),
+        rules: new Set(),
+        actors: new Map(),
+        targets: new Map(),
+        first: finding.timestamp || sourceReference(finding),
+        last: finding.timestamp || sourceReference(finding),
+        representativeIndex: index,
+      });
+    }
+    const row = rows.get(key);
+    const severity = finding.severity || "unknown";
+    row.count += 1;
+    row.severities.set(severity, (row.severities.get(severity) || 0) + 1);
+    if (finding.rule_id) {
+      row.rules.add(finding.rule_id);
+    }
+    if (finding.actor) {
+      row.actors.set(finding.actor, (row.actors.get(finding.actor) || 0) + 1);
+    }
+    if (finding.target) {
+      row.targets.set(finding.target, (row.targets.get(finding.target) || 0) + 1);
+    }
+    row.last = finding.timestamp || sourceReference(finding);
+  });
+  return Array.from(rows.values()).sort((left, right) => right.count - left.count || left.source.localeCompare(right.source));
+}
+
+function sourceReference(finding) {
+  if (finding.source_file && finding.line_number) {
+    return `${finding.source_file}:${finding.line_number}`;
+  }
+  return finding.source_file || "local evidence";
+}
+
+function topMapValue(values) {
+  const rows = Array.from(values, ([label, count]) => ({ label, count }));
+  rows.sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+  return rows.length ? rows[0].label : "n/a";
 }
 
 function renderAttackerIpStats(container, rows) {
   if (!container) {
     return;
   }
-  container.innerHTML = rows.length
-    ? ""
-    : `<p class="empty-state">${escapeHtml(t("noAttackerIps"))}</p>`;
+  container.innerHTML = "";
+  if (!rows.length) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(t("noAttackerIps"))}</p>`;
+    return;
+  }
+  for (const row of rows.slice(0, 5)) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "attacker-ip-row";
+    const severityMix = Array.from(row.severities, ([severity, count]) => `${severity}:${count}`).join(", ");
+    item.innerHTML = `
+      <strong>${escapeHtml(row.source)} (${escapeHtml(String(row.count))})</strong>
+      <span>${escapeHtml(severityMix || "unknown")}</span>
+      <span>${escapeHtml(Array.from(row.rules).slice(0, 3).join(", ") || "no rules")}</span>
+      <span>${escapeHtml(topMapValue(row.targets))} | ${escapeHtml(topMapValue(row.actors))}</span>
+      <span>${escapeHtml(row.first)} -> ${escapeHtml(row.last)}</span>
+    `;
+    item.addEventListener("click", () => {
+      state.filters.source = row.source;
+      sourceFilter.value = row.source;
+      state.findingPage = 1;
+      renderFindings(state.findings);
+    });
+    container.append(item);
+  }
 }
 
 function renderSelectedAlert(finding, index) {
@@ -548,17 +618,19 @@ function renderCharts(payload) {
   const sourceRows = chartSourceDistribution(findings);
   const timeRows = chartTimeDistribution(findings, insights);
   const severityRows = chartSeverityDistribution(summary, findings);
+  const attackerRows = aggregateAttackerIps(findings);
 
-  chartCount.textContent = findings.length ? "3 charts" : "0 charts";
+  chartCount.textContent = findings.length ? "4 charts" : "0 charts";
   renderBarChart(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
-  renderBarChart(charts.time, timeRows, { empty: "No time or evidence-order data to chart." });
+  renderBarChart(charts.time, timeRows, { empty: t("noTimeData") });
   renderBarChart(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  renderAttackerIpStats(charts.attackerIps, attackerRows);
 }
 
 function resetCharts() {
   chartCount.textContent = "0 charts";
   for (const container of Object.values(charts)) {
-    container.innerHTML = '<p class="empty-state">Run analysis to populate local charts.</p>';
+    container.innerHTML = `<p class="empty-state">${escapeHtml(t("runCharts"))}</p>`;
   }
 }
 
@@ -578,7 +650,7 @@ function chartTimeDistribution(findings, insights) {
     const label =
       finding.timestamp ||
       (timeline[index] && timeline[index].label) ||
-      `Evidence ${index + 1}`;
+      `${t("evidenceOrderDistribution")} ${Math.floor(index / 5) + 1}`;
     counts.set(label, (counts.get(label) || 0) + 1);
   });
   return sortedChartRows(counts, false).slice(0, 6);

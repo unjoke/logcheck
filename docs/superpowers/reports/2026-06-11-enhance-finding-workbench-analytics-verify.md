@@ -15,7 +15,7 @@ The implementation satisfies the OpenSpec change `enhance-finding-workbench-anal
 
 ## Automated Verification
 
-- `pytest -q`: PASS, 90 passed
+- `pytest -q`: PASS, 92 passed
 - `node --check logcheck/web_static/app.js`: PASS
 - Comet build wrapper `bash openspec/changes/enhance-finding-workbench-analytics/.comet/build.sh`: PASS, runs pytest and JS syntax check
 
@@ -33,6 +33,15 @@ Verified with Browser/Playwright:
 - Clicking attacker IP `198.51.100.7` set the source-address filter and reduced the queue to 8 findings.
 - Switching language to Chinese changed UI labels such as language, time distribution, and attacker IP statistics while preserving current analysis state and filter selection.
 - Mobile viewport `390x844` had no horizontal page overflow; `documentElement.scrollWidth` equaled `window.innerWidth`.
+
+Regression check after direct-run feedback:
+
+- Target: `http://127.0.0.1:8769`
+- Opened the dashboard with no manual file/sample interaction.
+- The sample selector defaulted to `incident.log`.
+- Clicking `Run analysis` changed the state to `Complete`.
+- The dashboard rendered 12 events, 27 findings, 4 charts, attacker IP statistics, and finding pagination `1 / 3`.
+- Browser console only reported a missing `favicon.ico`; no runtime JavaScript error was observed.
 
 ## Safety Verification
 

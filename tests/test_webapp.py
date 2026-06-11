@@ -294,6 +294,37 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     assert "analysis_id=${analysisId}" in export_target.group(1)
 
 
+def test_dashboard_script_defaults_sample_and_reports_missing_input():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_samples = script_function_body(script, "renderSamples")
+    run_analysis = script_function_body(script, "runAnalysis")
+
+    assert 'option.value === "incident.log"' in render_samples
+    assert "defaultOption.selected = true" in render_samples
+    assert "function hasLocalInput()" in script
+    assert "if (!hasLocalInput())" in run_analysis
+    assert "Select at least one local log file or sample log." in run_analysis
+
+
+def test_dashboard_script_resets_filters_for_new_analysis():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    run_analysis = script_function_body(script, "runAnalysis")
+    reset_filters = script_function_body(script, "resetFindingFilters")
+
+    assert "resetFindingFilters();" in run_analysis
+    for expected in [
+        'keyword: ""',
+        'severity: ""',
+        'rule: ""',
+        'source: ""',
+        'findingSearch.value = ""',
+        'severityFilter.value = ""',
+        'ruleFilter.value = ""',
+        'sourceFilter.value = ""',
+    ]:
+        assert expected in reset_filters
+
+
 def test_dashboard_script_translation_keys_cover_english_and_chinese():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 

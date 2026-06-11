@@ -177,9 +177,24 @@ function renderSamples(samples) {
   for (const sample of samples) {
     sampleSelect.append(new Option(sample.name, sample.id));
   }
+  const defaultOption =
+    Array.from(sampleSelect.options).find((option) => option.value === "incident.log") ||
+    sampleSelect.options[0];
+  if (defaultOption) {
+    defaultOption.selected = true;
+  }
 }
 
 async function runAnalysis() {
+  if (!hasLocalInput()) {
+    state.latestAnalysisId = "";
+    state.latestPayload = null;
+    state.findings = [];
+    renderError("Select at least one local log file or sample log.");
+    setRunState("Needs input");
+    return;
+  }
+
   const body = new FormData();
   for (const file of fileInput.files) {
     body.append("files", file);
@@ -204,6 +219,7 @@ async function runAnalysis() {
     }
     state.latestAnalysisId = payload.analysis_id || "";
     state.findings = payload.findings || [];
+    resetFindingFilters();
     renderResult(payload);
     toggleExports(Boolean(state.latestAnalysisId));
     setRunState("Complete");
@@ -214,6 +230,26 @@ async function runAnalysis() {
     renderError(error.message || "Analysis failed.");
     setRunState("Needs input");
   }
+}
+
+function hasLocalInput() {
+  return (
+    fileInput.files.length > 0 ||
+    Array.from(sampleSelect.selectedOptions).some((option) => option.value)
+  );
+}
+
+function resetFindingFilters() {
+  state.filters = {
+    keyword: "",
+    severity: "",
+    rule: "",
+    source: "",
+  };
+  findingSearch.value = "";
+  severityFilter.value = "";
+  ruleFilter.value = "";
+  sourceFilter.value = "";
 }
 
 function renderResult(payload) {

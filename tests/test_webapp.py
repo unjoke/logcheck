@@ -177,19 +177,18 @@ def test_dashboard_script_uses_ascii_separators():
 
 def test_dashboard_script_renders_structured_selected_alert_detail():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_findings = script_function_body(script, "renderFindings")
 
-    assert re.search(
-        r"if \(state\.findings\.length\) {\s*renderSelectedAlert\(state\.findings\[0\], 0\);",
-        script,
-    )
     assert re.search(
         r'button\.addEventListener\("click", \(\) => {\s*'
         r'document\.querySelectorAll\("\.finding-card"\).*?'
         r"button\.classList\.add\(\"active\"\);\s*"
-        r"renderSelectedAlert\(finding, index\);",
-        script,
+        r"state\.selectedFindingIndex = originalIndex;\s*"
+        r"renderSelectedAlert\(finding, originalIndex\);",
+        render_findings,
         re.DOTALL,
     )
+    assert "renderSelectedAlert(pageFindings[0].finding, pageFindings[0].originalIndex)" in render_findings
 
     for expected in [
         "alert-detail-section",
@@ -208,13 +207,10 @@ def test_dashboard_script_renders_structured_selected_alert_detail():
 
 def test_dashboard_script_clears_stale_selected_alert_when_no_findings():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_findings = script_function_body(script, "renderFindings")
 
-    assert re.search(
-        r"else {\s*"
-        r'clearSelectedAlert\("No findings were produced for the selected local material\."\);\s*'
-        r"}",
-        script,
-    )
+    assert "if (!findings.length)" in render_findings
+    assert 'clearSelectedAlert(t("noFilteredFindings"))' in render_findings
     assert re.search(
         r"function renderError\(message\) {.*?"
         r'clearSelectedAlert\("Select local material and run analysis\."\);',

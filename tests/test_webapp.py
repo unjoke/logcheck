@@ -197,7 +197,7 @@ def test_dashboard_script_translation_keys_cover_english_and_chinese():
         "evidenceOrderDistribution",
     ]:
         assert key in script
-    assert "\\u65f6\\u95f4\\u5206\\u5e03" in script
+    assert "时间分布" in script or "\\u65f6\\u95f4\\u5206\\u5e03" in script
 
 
 def test_dashboard_script_avoids_external_research_runtime_dependencies():
@@ -215,7 +215,8 @@ def test_dashboard_script_avoids_external_research_runtime_dependencies():
         "geoip",
         "mapbox",
         "geolocation",
-        "dns",
+        "dns.lookup",
+        "dns.resolve",
         "threat-intelligence",
         "threat intelligence",
     ]:

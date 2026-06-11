@@ -30,8 +30,8 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run the Python test suite covering insights, web serialization, web app behavior, and existing analysis/export behavior.
-- [ ] 5.2 Run JavaScript syntax or static checks for `logcheck/web_static/app.js`.
-- [ ] 5.3 Run the local web dashboard and verify desktop and mobile layouts with the Browser plugin or Playwright.
-- [ ] 5.4 Verify a sample analysis demonstrates paginated findings, Chinese/English switching, time distribution, detailed attacker IP statistics, and keyword/facet filtering.
-- [ ] 5.5 Record that runtime behavior remains offline/local-only and does not depend on the research links used during design.
+- [x] 5.1 Run the Python test suite covering insights, web serialization, web app behavior, and existing analysis/export behavior.
+- [x] 5.2 Run JavaScript syntax or static checks for `logcheck/web_static/app.js`.
+- [x] 5.3 Run the local web dashboard and verify desktop and mobile layouts with the Browser plugin or Playwright.
+- [x] 5.4 Verify a sample analysis demonstrates paginated findings, Chinese/English switching, time distribution, detailed attacker IP statistics, and keyword/facet filtering.
+- [x] 5.5 Record that runtime behavior remains offline/local-only and does not depend on the research links used during design.

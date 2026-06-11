@@ -1,0 +1,15 @@
+{
+  "change": "enhance-finding-workbench-analytics",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "6ba186635b5186ce2c8b24ae484a41598fe688cc462db7e6b7bf466f04b82edf",
+  "files": [
+    { "path": "openspec/changes/enhance-finding-workbench-analytics/proposal.md", "sha256": "1895a33880cd32ffa05ac568ccf6de9f85c3f7f595e702c2d44407c7875707e2" },
+    { "path": "openspec/changes/enhance-finding-workbench-analytics/design.md", "sha256": "3ef5f1927842b5dd39b623b8db8cce65a8d1b8d41d98b4f2bc212bf8fe0d903d" },
+    { "path": "openspec/changes/enhance-finding-workbench-analytics/tasks.md", "sha256": "39866e07d3f4d9154247027e8843a0c81030690fcba8959952bb44f0a5f4d2f9" },
+    { "path": "openspec/changes/enhance-finding-workbench-analytics/specs/analysis-insights/spec.md", "sha256": "1a403d553d8bd04bca811aa204aa7667b7dc6413c7b91694420fd670164f4d37" },
+    { "path": "openspec/changes/enhance-finding-workbench-analytics/specs/web-frontend/spec.md", "sha256": "259097963d4a8effb1c8273d72a3f0e065b9fb98d69a94293d69fe02e6a96847" }
+  ]
+}

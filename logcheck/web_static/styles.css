@@ -58,6 +58,30 @@ select {
   font-size: 14px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.language-control select {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 7px 30px 7px 10px;
+}
+
 .run-state {
   min-width: 96px;
   border: 1px solid var(--line);
@@ -72,11 +96,38 @@ select {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(230px, 280px) minmax(420px, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
   gap: 14px;
   max-width: 1480px;
   margin: 0 auto;
-  align-items: stretch;
+  align-items: start;
+}
+
+.source-rail,
+.supporting-report {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.source-rail {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.investigation-lane {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(380px, 1.05fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.summary-panel {
+  grid-column: 1 / -1;
+}
+
+.supporting-report {
+  grid-column: 2;
 }
 
 .panel {
@@ -117,7 +168,8 @@ select {
 
 .intake-form,
 .evidence-detail,
-.panel-section {
+.panel-section,
+.export-actions {
   padding: 14px;
 }
 
@@ -128,6 +180,11 @@ select {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.field.compact {
+  margin-bottom: 0;
+  font-size: 12px;
 }
 
 .field input,
@@ -142,6 +199,11 @@ select {
 
 .field select {
   min-height: 164px;
+}
+
+.field.compact select,
+.field.compact input {
+  min-height: 38px;
 }
 
 .primary-action,
@@ -162,13 +224,6 @@ select {
 .primary-action:hover,
 .primary-action:focus-visible {
   background: var(--accent-strong);
-}
-
-.main-grid {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
-  min-width: 0;
 }
 
 .metrics {
@@ -200,9 +255,49 @@ select {
 .finding-list {
   display: grid;
   gap: 8px;
-  max-height: calc(100vh - 250px);
+  max-height: calc(100vh - 385px);
   overflow: auto;
   padding: 10px;
+}
+
+.queue-toolbar {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pagination-controls button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+  color: var(--accent-strong);
+  padding: 6px 10px;
+  font-weight: 800;
+}
+
+.pagination-controls button:disabled {
+  color: #9aa39c;
+  cursor: not-allowed;
 }
 
 .visual-report-panel {
@@ -466,6 +561,23 @@ select {
   cursor: not-allowed;
 }
 
+.attacker-ip-table {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.attacker-ip-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(54px, auto);
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
 .empty-state {
   margin: 0;
   color: var(--muted);
@@ -475,11 +587,17 @@ select {
 
 @media (max-width: 1080px) {
   .workspace {
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
-  .detail-panel {
-    grid-column: 1 / -1;
+  .source-rail,
+  .supporting-report {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .investigation-lane {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -489,14 +607,24 @@ select {
   }
 
   .topbar,
-  .workspace {
+  .topbar-actions,
+  .workspace,
+  .investigation-lane {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .language-control {
+    align-items: start;
   }
 
   .metrics,
   .export-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
   }
 
   .chart-grid {
@@ -505,5 +633,12 @@ select {
 
   .finding-list {
     max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .metrics,
+  .export-actions {
+    grid-template-columns: 1fr;
   }
 }

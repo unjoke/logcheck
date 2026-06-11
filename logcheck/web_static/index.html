@@ -14,30 +14,52 @@
           <h1>Logcheck</h1>
           <p>Local Investigation Dashboard</p>
         </div>
-        <div class="run-state" id="run-state">Ready</div>
+        <div class="topbar-actions">
+          <label class="language-control" for="language-select">
+            <span data-i18n="languageLabel">Language</span>
+            <select id="language-select" name="language">
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+          <div class="run-state" id="run-state">Ready</div>
+        </div>
       </header>
 
       <section class="workspace" aria-label="Dashboard workspace">
-        <aside class="panel intake-panel" aria-labelledby="source-intake-title">
-          <div class="panel-heading">
-            <h2 id="source-intake-title">Source intake</h2>
-          </div>
-          <form id="analysis-form" class="intake-form">
-            <label class="field">
-              <span>Local log files</span>
-              <input id="log-files" name="files" type="file" multiple>
-            </label>
-            <label class="field">
-              <span>Sample set</span>
-              <select id="sample-select" name="sample_ids" multiple size="7">
-                <option value="">Loading samples</option>
-              </select>
-            </label>
-            <button id="run-analysis" class="primary-action" type="submit">Run analysis</button>
-          </form>
+        <aside class="source-rail" aria-label="Source intake and exports">
+          <section class="panel intake-panel" aria-labelledby="source-intake-title">
+            <div class="panel-heading">
+              <h2 id="source-intake-title">Source intake</h2>
+            </div>
+            <form id="analysis-form" class="intake-form">
+              <label class="field">
+                <span>Local log files</span>
+                <input id="log-files" name="files" type="file" multiple>
+              </label>
+              <label class="field">
+                <span>Sample set</span>
+                <select id="sample-select" name="sample_ids" multiple size="7">
+                  <option value="">Loading samples</option>
+                </select>
+              </label>
+              <button id="run-analysis" class="primary-action" type="submit">Run analysis</button>
+            </form>
+          </section>
+
+          <section class="panel export-panel" aria-labelledby="exports-title">
+            <div class="panel-heading">
+              <h2 id="exports-title">Exports</h2>
+            </div>
+            <div class="export-actions">
+              <button type="button" class="export-button" data-format="json" disabled>JSON</button>
+              <button type="button" class="export-button" data-format="csv" disabled>CSV</button>
+              <button type="button" class="export-button" data-format="markdown" disabled>Markdown</button>
+            </div>
+          </section>
         </aside>
 
-        <section class="main-grid">
+        <section class="investigation-lane" aria-label="Finding and evidence review">
           <section class="panel summary-panel" aria-labelledby="analysis-summary-title">
             <div class="panel-heading">
               <h2 id="analysis-summary-title">Analysis summary</h2>
@@ -62,6 +84,67 @@
             </dl>
           </section>
 
+          <section class="panel queue-panel" aria-labelledby="finding-queue-title">
+            <div class="panel-heading">
+              <h2 id="finding-queue-title">Finding queue</h2>
+              <span id="queue-count">0 items</span>
+            </div>
+            <div class="queue-toolbar" aria-label="Finding filters">
+              <label class="field compact">
+                <span>Search findings</span>
+                <input id="finding-search" name="finding-search" type="search" placeholder="Search evidence">
+              </label>
+              <div class="filter-grid">
+                <label class="field compact">
+                  <span>Severity</span>
+                  <select id="severity-filter" name="severity-filter">
+                    <option value="">All severities</option>
+                  </select>
+                </label>
+                <label class="field compact">
+                  <span>Rule</span>
+                  <select id="rule-filter" name="rule-filter">
+                    <option value="">All rules</option>
+                  </select>
+                </label>
+                <label class="field compact">
+                  <span>Source</span>
+                  <select id="source-filter" name="source-filter">
+                    <option value="">All sources</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div id="finding-list" class="finding-list" role="list">
+              <p class="empty-state">Run analysis to populate the queue.</p>
+            </div>
+            <div id="finding-pagination" class="pagination-controls" aria-label="Finding pagination">
+              <button type="button" disabled>Previous</button>
+              <span>Page 1</span>
+              <button type="button" disabled>Next</button>
+            </div>
+          </section>
+
+          <section class="panel detail-panel" aria-labelledby="evidence-detail-title">
+            <div class="panel-heading">
+              <h2 id="evidence-detail-title">Evidence detail</h2>
+            </div>
+            <article id="evidence-detail" class="evidence-detail">
+              <p class="empty-state">Select a finding to inspect matched evidence.</p>
+            </article>
+
+            <div class="panel-section" aria-labelledby="investigation-insights-title">
+              <div class="panel-heading compact">
+                <h2 id="investigation-insights-title">Investigation insights</h2>
+              </div>
+              <ul id="insight-list" class="insight-list">
+                <li class="empty-state">Insights appear after analysis.</li>
+              </ul>
+            </div>
+          </section>
+        </section>
+
+        <aside class="supporting-report" aria-label="Supporting visual report">
           <section class="panel visual-report-panel" aria-labelledby="visual-report-title">
             <div class="panel-heading">
               <h2 id="visual-report-title">Visual report</h2>
@@ -75,7 +158,7 @@
                 </div>
               </article>
               <article class="chart-card" aria-labelledby="time-chart-title">
-                <h3 id="time-chart-title">Time/evidence order</h3>
+                <h3 id="time-chart-title">Time distribution</h3>
                 <div id="time-chart" class="chart-body">
                   <p class="empty-state">Run analysis to populate local charts.</p>
                 </div>
@@ -89,44 +172,14 @@
             </div>
           </section>
 
-          <section class="panel queue-panel" aria-labelledby="finding-queue-title">
+          <section class="panel attacker-ip-panel" aria-labelledby="attacker-ip-title">
             <div class="panel-heading">
-              <h2 id="finding-queue-title">Finding queue</h2>
-              <span id="queue-count">0 items</span>
+              <h2 id="attacker-ip-title">Attacker IP statistics</h2>
             </div>
-            <div id="finding-list" class="finding-list" role="list">
-              <p class="empty-state">Run analysis to populate the queue.</p>
+            <div id="attacker-ip-stats" class="attacker-ip-table">
+              <div class="attacker-ip-row empty-state">Run analysis to populate attacker IP statistics.</div>
             </div>
           </section>
-        </section>
-
-        <aside class="panel detail-panel" aria-labelledby="evidence-detail-title">
-          <div class="panel-heading">
-            <h2 id="evidence-detail-title">Evidence detail</h2>
-          </div>
-          <article id="evidence-detail" class="evidence-detail">
-            <p class="empty-state">Select a finding to inspect matched evidence.</p>
-          </article>
-
-          <div class="panel-section" aria-labelledby="investigation-insights-title">
-            <div class="panel-heading compact">
-              <h2 id="investigation-insights-title">Investigation insights</h2>
-            </div>
-            <ul id="insight-list" class="insight-list">
-              <li class="empty-state">Insights appear after analysis.</li>
-            </ul>
-          </div>
-
-          <div class="panel-section" aria-labelledby="exports-title">
-            <div class="panel-heading compact">
-              <h2 id="exports-title">Exports</h2>
-            </div>
-            <div class="export-actions">
-              <button type="button" class="export-button" data-format="json" disabled>JSON</button>
-              <button type="button" class="export-button" data-format="csv" disabled>CSV</button>
-              <button type="button" class="export-button" data-format="markdown" disabled>Markdown</button>
-            </div>
-          </div>
         </aside>
       </section>
     </main>

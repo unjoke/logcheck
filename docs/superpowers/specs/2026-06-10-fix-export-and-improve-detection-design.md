@@ -2,6 +2,8 @@
 comet_change: fix-export-and-improve-detection
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-11-fix-export-and-improve-detection
+status: final
 ---
 
 # Fix Export and Improve Detection Technical Design

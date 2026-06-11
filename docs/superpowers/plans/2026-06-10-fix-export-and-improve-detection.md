@@ -2,6 +2,7 @@
 change: fix-export-and-improve-detection
 design-doc: docs/superpowers/specs/2026-06-10-fix-export-and-improve-detection-design.md
 base-ref: 2a0237fbd5600e9aa94db9df44d9082161dccc30
+archived-with: 2026-06-11-fix-export-and-improve-detection
 ---
 
 # Fix Export and Improve Detection Implementation Plan

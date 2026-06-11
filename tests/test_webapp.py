@@ -246,6 +246,16 @@ def test_dashboard_script_includes_local_chart_helpers():
     assert "resetCharts()" in script
 
 
+def test_dashboard_script_handles_missing_chart_containers_defensively():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    reset_charts = script_function_body(script, "resetCharts")
+    render_charts = script_function_body(script, "renderCharts")
+
+    assert "if (!container)" in reset_charts
+    assert "filter(Boolean).length" in render_charts
+    assert 'findings.length ? "4 charts" : "0 charts"' not in script
+
+
 def test_dashboard_script_includes_pagination_filter_i18n_and_ip_helpers():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 

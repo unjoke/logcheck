@@ -620,7 +620,8 @@ function renderCharts(payload) {
   const severityRows = chartSeverityDistribution(summary, findings);
   const attackerRows = aggregateAttackerIps(findings);
 
-  chartCount.textContent = findings.length ? "4 charts" : "0 charts";
+  const renderedChartCount = [charts.source, charts.time, charts.severity, charts.attackerIps].filter(Boolean).length;
+  chartCount.textContent = findings.length ? `${renderedChartCount} charts` : "0 charts";
   renderBarChart(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
   renderBarChart(charts.time, timeRows, { empty: t("noTimeData") });
   renderBarChart(charts.severity, severityRows, { empty: "No severity findings to chart." });
@@ -630,6 +631,9 @@ function renderCharts(payload) {
 function resetCharts() {
   chartCount.textContent = "0 charts";
   for (const container of Object.values(charts)) {
+    if (!container) {
+      continue;
+    }
     container.innerHTML = `<p class="empty-state">${escapeHtml(t("runCharts"))}</p>`;
   }
 }

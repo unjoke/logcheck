@@ -18,15 +18,15 @@
 - [x] 3.1 Add finding queue pagination controls and integrate them with selection and filters.
 - [x] 3.2 Add a compact local i18n dictionary and visible English/Chinese language control.
 - [x] 3.3 Ensure core UI labels, status text, filter labels, chart labels, empty states, and export/status messages use the language dictionary.
-- [ ] 3.4 Render the time-distribution chart clearly in the visual report area.
-- [ ] 3.5 Render detailed attacker IP statistics with counts, severity mix, related rules, targets or actors, first/last observation, and evidence access.
+- [x] 3.4 Render the time-distribution chart clearly in the visual report area.
+- [x] 3.5 Render detailed attacker IP statistics with counts, severity mix, related rules, targets or actors, first/last observation, and evidence access.
 - [x] 3.6 Add keyword and facet filter controls that filter first and paginate second.
 
 ## 4. Insight and Serialization Updates
 
-- [ ] 4.1 Extend `analysis-insights` data or web serialization only where frontend-only derivation is insufficient.
-- [ ] 4.2 Ensure source-address profile data remains local-only and does not perform enrichment or network actions.
-- [ ] 4.3 Ensure exports and selected finding details still show raw evidence after normalized filtering support is added.
+- [x] 4.1 Extend `analysis-insights` data or web serialization only where frontend-only derivation is insufficient.
+- [x] 4.2 Ensure source-address profile data remains local-only and does not perform enrichment or network actions.
+- [x] 4.3 Ensure exports and selected finding details still show raw evidence after normalized filtering support is added.
 
 ## 5. Verification
 

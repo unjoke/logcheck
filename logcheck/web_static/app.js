@@ -1,6 +1,16 @@
 const state = {
   latestAnalysisId: "",
   findings: [],
+  selectedFindingIndex: null,
+  language: localStorage.getItem("logcheckLanguage") || "en",
+  filters: {
+    keyword: "",
+    severity: "",
+    rule: "",
+    source: "",
+  },
+  findingPage: 1,
+  findingsPerPage: 10,
 };
 
 const form = document.querySelector("#analysis-form");
@@ -13,6 +23,12 @@ const evidenceDetail = document.querySelector("#evidence-detail");
 const insightList = document.querySelector("#insight-list");
 const exportButtons = Array.from(document.querySelectorAll(".export-button"));
 const chartCount = document.querySelector("#chart-count");
+const languageSelect = document.querySelector("#language-select");
+const findingSearch = document.querySelector("#finding-search");
+const severityFilter = document.querySelector("#severity-filter");
+const ruleFilter = document.querySelector("#rule-filter");
+const sourceFilter = document.querySelector("#source-filter");
+const findingPagination = document.querySelector("#finding-pagination");
 const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
@@ -26,7 +42,58 @@ const metrics = {
   high: document.querySelector("#metric-high"),
 };
 
+const TRANSLATIONS = {
+  en: {
+    languageLabel: "Language",
+    findingQueue: "Finding queue",
+    timeDistribution: "Time distribution",
+    attackerIpStatistics: "Attacker IP statistics",
+    keywordFilter: "Keyword filter",
+    severityFilter: "Severity",
+    ruleFilter: "Rule",
+    sourceFilter: "Source address",
+    previousPage: "Previous",
+    nextPage: "Next",
+    allSeverities: "All severities",
+    allRules: "All rules",
+    allSources: "All sources",
+    evidenceOrderDistribution: "Evidence order distribution",
+    noFindingsQueue: "No findings in the queue.",
+    noFilteredFindings: "No findings match the current filters.",
+    noAttackerIps: "No source addresses were found in local findings.",
+    runCharts: "Run analysis to populate local charts.",
+    noTimeData: "No time or evidence-order data to chart.",
+  },
+  zh: {
+    languageLabel: "\u8bed\u8a00",
+    findingQueue: "\u53d1\u73b0\u961f\u5217",
+    timeDistribution: "\u65f6\u95f4\u5206\u5e03",
+    attackerIpStatistics: "\u653b\u51fb IP \u7edf\u8ba1",
+    keywordFilter: "\u5173\u952e\u8bcd\u8fc7\u6ee4",
+    severityFilter: "\u4e25\u91cd\u7ea7\u522b",
+    ruleFilter: "\u89c4\u5219",
+    sourceFilter: "\u6e90\u5730\u5740",
+    previousPage: "\u4e0a\u4e00\u9875",
+    nextPage: "\u4e0b\u4e00\u9875",
+    allSeverities: "\u5168\u90e8\u7ea7\u522b",
+    allRules: "\u5168\u90e8\u89c4\u5219",
+    allSources: "\u5168\u90e8\u6765\u6e90",
+    evidenceOrderDistribution: "\u8bc1\u636e\u987a\u5e8f\u5206\u5e03",
+    noFindingsQueue: "\u961f\u5217\u4e2d\u6ca1\u6709\u53d1\u73b0",
+    noFilteredFindings: "\u6ca1\u6709\u7b26\u5408\u5f53\u524d\u8fc7\u6ee4\u6761\u4ef6\u7684\u53d1\u73b0",
+    noAttackerIps: "\u672c\u5730\u53d1\u73b0\u4e2d\u6ca1\u6709\u6e90\u5730\u5740",
+    runCharts: "\u8fd0\u884c\u5206\u6790\u540e\u751f\u6210\u672c\u5730\u56fe\u8868",
+    noTimeData: "\u6ca1\u6709\u53ef\u7528\u7684\u65f6\u95f4\u6216\u8bc1\u636e\u987a\u5e8f\u6570\u636e",
+  },
+};
+
+function t(key) {
+  return (TRANSLATIONS[state.language] && TRANSLATIONS[state.language][key]) || TRANSLATIONS.en[key] || key;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  languageSelect.value = state.language;
+  applyTranslations();
   loadSamples();
 });
 
@@ -45,6 +112,44 @@ exportButtons.forEach((button) => {
     window.location.assign(`/api/exports/${format}?analysis_id=${analysisId}`);
   });
 });
+
+languageSelect.addEventListener("change", () => {
+  setLanguage(languageSelect.value);
+});
+
+findingSearch.addEventListener("input", () => {
+  state.filters.keyword = findingSearch.value;
+  state.findingPage = 1;
+  renderFindings(state.findings);
+});
+
+for (const [element, key] of [
+  [severityFilter, "severity"],
+  [ruleFilter, "rule"],
+  [sourceFilter, "source"],
+]) {
+  element.addEventListener("change", () => {
+    state.filters[key] = element.value;
+    state.findingPage = 1;
+    renderFindings(state.findings);
+  });
+}
+
+function setLanguage(language) {
+  state.language = TRANSLATIONS[language] ? language : "en";
+  localStorage.setItem("logcheckLanguage", state.language);
+  languageSelect.value = state.language;
+  applyTranslations();
+  buildFilterOptions(state.findings);
+  renderFindings(state.findings);
+  renderCharts({ findings: state.findings, summary: {}, insights: {} });
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+}
 
 async function loadSamples() {
   try {
@@ -114,27 +219,37 @@ function renderResult(payload) {
   metrics.findings.textContent = summary.total_findings ?? state.findings.length;
   metrics.sources.textContent = Array.isArray(summary.analyzed_sources) ? summary.analyzed_sources.length : 0;
   metrics.high.textContent = countHighPriority(state.findings);
+  state.findingPage = 1;
+  buildFilterOptions(state.findings);
   renderFindings(state.findings);
   renderInsights(payload.insights || []);
   renderCharts(payload);
-  if (state.findings.length) {
-    renderSelectedAlert(state.findings[0], 0);
-  } else {
+  if (!state.findings.length) {
     clearSelectedAlert("No findings were produced for the selected local material.");
   }
 }
 
 function renderFindings(findings) {
-  queueCount.textContent = `${findings.length} ${findings.length === 1 ? "item" : "items"}`;
+  const filteredFindings = applyFindingFilters(findings);
+  const { pageCount, pageFindings, start } = paginateFindings(filteredFindings);
+  queueCount.textContent = `${filteredFindings.length} ${filteredFindings.length === 1 ? "item" : "items"}`;
   findingList.innerHTML = "";
   if (!findings.length) {
-    findingList.innerHTML = '<p class="empty-state">No findings in the queue.</p>';
+    findingList.innerHTML = `<p class="empty-state">${escapeHtml(t("noFindingsQueue"))}</p>`;
+    renderPagination(pageCount, filteredFindings.length);
     return;
   }
-  findings.forEach((finding, index) => {
+  if (!filteredFindings.length) {
+    findingList.innerHTML = `<p class="empty-state">${escapeHtml(t("noFilteredFindings"))}</p>`;
+    clearSelectedAlert(t("noFilteredFindings"));
+    renderPagination(pageCount, filteredFindings.length);
+    return;
+  }
+  pageFindings.forEach((finding, pageIndex) => {
+    const index = start + pageIndex;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `finding-card${index === 0 ? " active" : ""}`;
+    button.className = `finding-card${pageIndex === 0 ? " active" : ""}`;
     button.setAttribute("role", "listitem");
     button.innerHTML = `
       <div class="finding-title">
@@ -148,10 +263,130 @@ function renderFindings(findings) {
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
       button.classList.add("active");
+      state.selectedFindingIndex = index;
       renderSelectedAlert(finding, index);
     });
     findingList.append(button);
   });
+  state.selectedFindingIndex = start;
+  renderSelectedAlert(pageFindings[0], start);
+  renderPagination(pageCount, filteredFindings.length);
+}
+
+function applyFindingFilters(findings) {
+  const keyword = normalizeFilterText(state.filters.keyword);
+  return findings.filter((finding) => {
+    if (state.filters.severity && String(finding.severity || "").toLowerCase() !== state.filters.severity) {
+      return false;
+    }
+    if (state.filters.rule && finding.rule_id !== state.filters.rule) {
+      return false;
+    }
+    if (state.filters.source && finding.source_address !== state.filters.source) {
+      return false;
+    }
+    if (!keyword) {
+      return true;
+    }
+    return normalizeFilterText(findingSearchText(finding)).includes(keyword);
+  });
+}
+
+function findingSearchText(finding) {
+  return [
+    finding.rule_id,
+    finding.severity,
+    finding.source_file,
+    finding.source_address,
+    finding.actor,
+    finding.target,
+    finding.matched_keyword,
+    finding.explanation,
+    ...(finding.evidence || []),
+  ]
+    .filter((value) => value !== null && value !== undefined)
+    .join(" ");
+}
+
+function normalizeFilterText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, " ip ")
+    .replace(/\b\d+\b/g, " number ")
+    .replace(/\b[a-z]:\\[^\s]+/g, " path ")
+    .replace(/\/[^\s]+/g, " path ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function paginateFindings(findings) {
+  const pageCount = Math.max(1, Math.ceil(findings.length / state.findingsPerPage));
+  state.findingPage = Math.min(Math.max(state.findingPage, 1), pageCount);
+  const start = (state.findingPage - 1) * state.findingsPerPage;
+  return {
+    pageCount,
+    pageFindings: findings.slice(start, start + state.findingsPerPage),
+    start,
+  };
+}
+
+function renderPagination(pageCount, total) {
+  findingPagination.innerHTML = "";
+  const previous = document.createElement("button");
+  previous.type = "button";
+  previous.textContent = t("previousPage");
+  previous.disabled = state.findingPage <= 1;
+  previous.addEventListener("click", () => {
+    state.findingPage -= 1;
+    renderFindings(state.findings);
+  });
+
+  const next = document.createElement("button");
+  next.type = "button";
+  next.textContent = t("nextPage");
+  next.disabled = state.findingPage >= pageCount || total === 0;
+  next.addEventListener("click", () => {
+    state.findingPage += 1;
+    renderFindings(state.findings);
+  });
+
+  const status = document.createElement("span");
+  status.textContent = `${state.findingPage} / ${pageCount}`;
+
+  findingPagination.append(previous, status, next);
+}
+
+function buildFilterOptions(findings) {
+  fillFilter(severityFilter, t("allSeverities"), uniqueValues(findings, (finding) => String(finding.severity || "").toLowerCase()));
+  fillFilter(ruleFilter, t("allRules"), uniqueValues(findings, (finding) => finding.rule_id));
+  fillFilter(sourceFilter, t("allSources"), uniqueValues(findings, (finding) => finding.source_address));
+}
+
+function uniqueValues(findings, getter) {
+  return Array.from(new Set(findings.map(getter).filter(Boolean))).sort();
+}
+
+function fillFilter(element, emptyLabel, values) {
+  const current = element.value;
+  element.innerHTML = "";
+  element.append(new Option(emptyLabel, ""));
+  for (const value of values) {
+    element.append(new Option(value, value));
+  }
+  element.value = values.includes(current) ? current : "";
+}
+
+function aggregateAttackerIps(findings) {
+  return [];
+}
+
+function renderAttackerIpStats(container, rows) {
+  if (!container) {
+    return;
+  }
+  container.innerHTML = rows.length
+    ? ""
+    : `<p class="empty-state">${escapeHtml(t("noAttackerIps"))}</p>`;
 }
 
 function renderSelectedAlert(finding, index) {

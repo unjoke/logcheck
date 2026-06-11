@@ -1,5 +1,6 @@
 const state = {
   latestAnalysisId: "",
+  latestPayload: null,
   findings: [],
   selectedFindingIndex: null,
   language: localStorage.getItem("logcheckLanguage") || "en",
@@ -142,7 +143,7 @@ function setLanguage(language) {
   applyTranslations();
   buildFilterOptions(state.findings);
   renderFindings(state.findings);
-  renderCharts({ findings: state.findings, summary: {}, insights: {} });
+  renderCharts(state.latestPayload || { findings: state.findings, summary: {}, insights: {} });
 }
 
 function applyTranslations() {
@@ -207,6 +208,7 @@ async function runAnalysis() {
     setRunState("Complete");
   } catch (error) {
     state.latestAnalysisId = "";
+    state.latestPayload = null;
     state.findings = [];
     renderError(error.message || "Analysis failed.");
     setRunState("Needs input");
@@ -215,6 +217,7 @@ async function runAnalysis() {
 
 function renderResult(payload) {
   const summary = payload.summary || {};
+  state.latestPayload = { ...payload, findings: state.findings };
   metrics.events.textContent = summary.total_events ?? 0;
   metrics.findings.textContent = summary.total_findings ?? state.findings.length;
   metrics.sources.textContent = Array.isArray(summary.analyzed_sources) ? summary.analyzed_sources.length : 0;
@@ -230,8 +233,9 @@ function renderResult(payload) {
 }
 
 function renderFindings(findings) {
-  const filteredFindings = applyFindingFilters(findings);
-  const { pageCount, pageFindings, start } = paginateFindings(filteredFindings);
+  const indexedFindings = findings.map((finding, originalIndex) => ({ finding, originalIndex }));
+  const filteredFindings = applyFindingFilters(indexedFindings);
+  const { pageCount, pageFindings } = paginateFindings(filteredFindings);
   queueCount.textContent = `${filteredFindings.length} ${filteredFindings.length === 1 ? "item" : "items"}`;
   findingList.innerHTML = "";
   if (!findings.length) {
@@ -245,8 +249,7 @@ function renderFindings(findings) {
     renderPagination(pageCount, filteredFindings.length);
     return;
   }
-  pageFindings.forEach((finding, pageIndex) => {
-    const index = start + pageIndex;
+  pageFindings.forEach(({ finding, originalIndex }, pageIndex) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `finding-card${pageIndex === 0 ? " active" : ""}`;
@@ -263,19 +266,20 @@ function renderFindings(findings) {
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
       button.classList.add("active");
-      state.selectedFindingIndex = index;
-      renderSelectedAlert(finding, index);
+      state.selectedFindingIndex = originalIndex;
+      renderSelectedAlert(finding, originalIndex);
     });
     findingList.append(button);
   });
-  state.selectedFindingIndex = start;
-  renderSelectedAlert(pageFindings[0], start);
+  state.selectedFindingIndex = pageFindings[0].originalIndex;
+  renderSelectedAlert(pageFindings[0].finding, pageFindings[0].originalIndex);
   renderPagination(pageCount, filteredFindings.length);
 }
 
 function applyFindingFilters(findings) {
   const keyword = normalizeFilterText(state.filters.keyword);
-  return findings.filter((finding) => {
+  return findings.filter((item) => {
+    const finding = item.finding || item;
     if (state.filters.severity && String(finding.severity || "").toLowerCase() !== state.filters.severity) {
       return false;
     }

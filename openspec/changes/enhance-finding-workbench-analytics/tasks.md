@@ -1,11 +1,11 @@
 ## 1. Regression Coverage
 
-- [ ] 1.1 Add tests or static checks for finding queue pagination controls, page counts, and selected-finding behavior.
-- [ ] 1.2 Add tests or static checks for Chinese/English language switching and missing translation keys.
-- [ ] 1.3 Add tests that the visual report includes an explicit time-distribution chart with timestamp and evidence-order fallback states.
-- [ ] 1.4 Add tests for detailed attacker IP statistics fields and empty state.
-- [ ] 1.5 Add tests for keyword/facet filtering across structured fields and evidence text.
-- [ ] 1.6 Add safety checks confirming no URL/domain inputs, external fetches, CDN imports, scan/block/exploit controls, or external reporting controls are introduced.
+- [x] 1.1 Add tests or static checks for finding queue pagination controls, page counts, and selected-finding behavior.
+- [x] 1.2 Add tests or static checks for Chinese/English language switching and missing translation keys.
+- [x] 1.3 Add tests that the visual report includes an explicit time-distribution chart with timestamp and evidence-order fallback states.
+- [x] 1.4 Add tests for detailed attacker IP statistics fields and empty state.
+- [x] 1.5 Add tests for keyword/facet filtering across structured fields and evidence text.
+- [x] 1.6 Add safety checks confirming no URL/domain inputs, external fetches, CDN imports, scan/block/exploit controls, or external reporting controls are introduced.
 
 ## 2. Local Aggregation Design
 

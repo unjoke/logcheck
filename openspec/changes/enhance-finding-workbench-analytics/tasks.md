@@ -9,18 +9,18 @@
 
 ## 2. Local Aggregation Design
 
-- [ ] 2.1 Audit the current analysis payload, insight serialization, and frontend chart helpers to decide which analytics can be derived in the browser.
-- [ ] 2.2 Implement or update local helper functions for filtered finding sets, pagination state, time buckets, and source-address aggregation.
-- [ ] 2.3 Add normalized evidence text helper logic only if needed for useful keyword matching, preserving raw evidence display.
+- [x] 2.1 Audit the current analysis payload, insight serialization, and frontend chart helpers to decide which analytics can be derived in the browser.
+- [x] 2.2 Implement or update local helper functions for filtered finding sets, pagination state, time buckets, and source-address aggregation.
+- [x] 2.3 Add normalized evidence text helper logic only if needed for useful keyword matching, preserving raw evidence display.
 
 ## 3. Workbench UI Implementation
 
-- [ ] 3.1 Add finding queue pagination controls and integrate them with selection and filters.
-- [ ] 3.2 Add a compact local i18n dictionary and visible English/Chinese language control.
-- [ ] 3.3 Ensure core UI labels, status text, filter labels, chart labels, empty states, and export/status messages use the language dictionary.
+- [x] 3.1 Add finding queue pagination controls and integrate them with selection and filters.
+- [x] 3.2 Add a compact local i18n dictionary and visible English/Chinese language control.
+- [x] 3.3 Ensure core UI labels, status text, filter labels, chart labels, empty states, and export/status messages use the language dictionary.
 - [ ] 3.4 Render the time-distribution chart clearly in the visual report area.
 - [ ] 3.5 Render detailed attacker IP statistics with counts, severity mix, related rules, targets or actors, first/last observation, and evidence access.
-- [ ] 3.6 Add keyword and facet filter controls that filter first and paginate second.
+- [x] 3.6 Add keyword and facet filter controls that filter first and paginate second.
 
 ## 4. Insight and Serialization Updates
 

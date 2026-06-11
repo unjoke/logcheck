@@ -88,6 +88,37 @@ def test_dashboard_renders_visual_report_region(tmp_path):
         assert text in html
 
 
+def test_dashboard_renders_language_filter_pagination_and_attacker_ip_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for expected in [
+        'id="language-select"',
+        'id="finding-search"',
+        'id="severity-filter"',
+        'id="rule-filter"',
+        'id="source-filter"',
+        'id="finding-pagination"',
+        "Attacker IP statistics",
+        'id="attacker-ip-stats"',
+    ]:
+        assert expected in html
+
+
+def test_dashboard_time_chart_title_is_explicit(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Time distribution" in html
+    assert "Time/evidence order" not in html
+
+
 def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
     client = make_app(tmp_path)
 
@@ -219,6 +250,32 @@ def test_dashboard_script_includes_local_chart_helpers():
     assert "resetCharts()" in script
 
 
+def test_dashboard_script_includes_pagination_filter_i18n_and_ip_helpers():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for expected in [
+        "TRANSLATIONS",
+        "setLanguage",
+        "applyFindingFilters",
+        "normalizeFilterText",
+        "paginateFindings",
+        "renderPagination",
+        "aggregateAttackerIps",
+        "renderAttackerIpStats",
+        "buildFilterOptions",
+    ]:
+        assert expected in script
+
+
+def test_dashboard_script_filters_before_paginating():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    body = script_function_body(script, "renderFindings")
+
+    assert "applyFindingFilters" in body
+    assert "paginateFindings" in body
+    assert body.index("applyFindingFilters") < body.index("paginateFindings")
+
+
 def test_dashboard_script_fetches_only_local_api_inputs():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
 
@@ -229,6 +286,45 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     assert export_target is not None
     assert export_target.group(1).startswith("/api/exports/")
     assert "analysis_id=${analysisId}" in export_target.group(1)
+
+
+def test_dashboard_script_translation_keys_cover_english_and_chinese():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "const TRANSLATIONS" in script
+    for key in [
+        "languageLabel",
+        "findingQueue",
+        "timeDistribution",
+        "attackerIpStatistics",
+        "keywordFilter",
+        "severityFilter",
+        "ruleFilter",
+        "sourceFilter",
+        "nextPage",
+        "previousPage",
+        "evidenceOrderDistribution",
+    ]:
+        assert key in script
+    assert "\\u65f6\\u95f4\\u5206\\u5e03" in script
+
+
+def test_dashboard_script_avoids_external_research_runtime_dependencies():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8").lower()
+
+    for forbidden in [
+        "logai",
+        "logbert",
+        "logpai",
+        "cdn.",
+        "http://",
+        "https://",
+        "geolocation",
+        "dns",
+        "threat-intelligence",
+        "threat intelligence",
+    ]:
+        assert forbidden not in script
 
 
 def test_dashboard_styles_include_responsive_chart_rules():
@@ -440,3 +536,18 @@ def test_dashboard_styles_prevent_chart_label_overlap():
     assert "grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1.8fr) minmax(24px, auto)" in styles
     assert ".chart-label" in styles
     assert "max-width: 100%" in styles
+
+
+def test_dashboard_styles_include_filters_pagination_and_attacker_ip_rules():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    for selector in [
+        ".language-control",
+        ".filter-grid",
+        ".queue-toolbar",
+        ".pagination-controls",
+        ".attacker-ip-table",
+        ".attacker-ip-row",
+    ]:
+        assert selector in styles
+    assert "overflow-wrap: anywhere" in styles

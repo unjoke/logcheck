@@ -2,6 +2,8 @@
 comet_change: enhance-finding-workbench-analytics
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-06-11-enhance-finding-workbench-analytics
+status: final
 ---
 
 # Enhance Finding Workbench Analytics Technical Design

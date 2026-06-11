@@ -1,47 +1,36 @@
-## Purpose
+## ADDED Requirements
 
-Generate local investigation insight summaries, entity profiles, timelines, and safe remediation suggestions from parsed log events and findings.
+### Requirement: Provide chart-ready local time distribution
+The system SHALL provide enough local analysis data for the frontend to render a time-distribution chart for findings.
 
-## Requirements
+#### Scenario: Findings include timestamps
+- **WHEN** detected findings include parsed timestamps
+- **THEN** the analysis result or derived insight data supports grouping findings into ordered time buckets
 
-### Requirement: Generate local investigation insights
-The system SHALL generate local investigation insights from parsed events and detected findings without using network access or external services.
+#### Scenario: Findings lack timestamps
+- **WHEN** detected findings do not include parsed timestamps
+- **THEN** the analysis result preserves deterministic source order, line order, or insight timeline labels sufficient for an evidence-order distribution
 
-#### Scenario: Insight summary after analysis
-- **WHEN** analysis completes with one or more findings
-- **THEN** the system produces an insight summary describing the most important suspicious behavior, affected entities, and evidence references
-- **AND** the summary is derived only from local parsed events and findings
+### Requirement: Provide detailed source-address profiles
+The system SHALL support detailed local source-address profiles for attacker IP statistics.
 
-#### Scenario: No findings insight
-- **WHEN** analysis completes with parsed events but no findings
-- **THEN** the system produces a low-risk insight summary that states no configured rule patterns were detected
+#### Scenario: Source-address profile aggregates findings
+- **WHEN** multiple findings share the same source address
+- **THEN** the insight data or frontend-derivable fields include finding count, severity distribution, related rules, associated targets or actors, first and last observed timestamp or source reference, and representative evidence references
 
-### Requirement: Profile suspicious entities
-The system SHALL identify suspicious local entities such as source addresses, actors, targets, and files from analysis results.
+#### Scenario: Source-address profile remains local
+- **WHEN** source-address profiles are generated
+- **THEN** the system uses only parsed local events and local findings
+- **AND** it does not perform IP geolocation, DNS lookup, threat-intelligence lookup, remote enrichment, blocking, or scanning
 
-#### Scenario: Entity profile includes evidence
-- **WHEN** a source address, actor, target, or file appears in multiple findings
-- **THEN** the system creates an entity profile with finding count, severity distribution, related rules, and evidence references
+### Requirement: Preserve normalized keyword context
+The system SHALL preserve enough finding and evidence context for research-informed local keyword filtering.
 
-#### Scenario: Unknown entity handling
-- **WHEN** a finding lacks source address or actor information
-- **THEN** the system preserves the finding in an unknown-entity group instead of discarding it
+#### Scenario: Raw evidence remains available
+- **WHEN** a finding is produced from local log evidence
+- **THEN** the raw evidence remains available for display and export
 
-### Requirement: Highlight incident timeline
-The system SHALL produce a concise timeline of notable local log activity.
-
-#### Scenario: Timeline highlights suspicious sequence
-- **WHEN** multiple findings have timestamps
-- **THEN** the system orders notable activity by time and includes rule, entity, severity, and source-file context
-
-#### Scenario: Missing timestamps
-- **WHEN** findings do not contain timestamps
-- **THEN** the system still provides ordered evidence based on file and line references where available
-
-### Requirement: Suggest local remediation steps
-The system SHALL provide local remediation suggestions that are safe, review-oriented, and non-destructive.
-
-#### Scenario: Suggestions remain non-destructive
-- **WHEN** insights include remediation suggestions
-- **THEN** the suggestions describe manual review, account audit, password policy, rule tuning, or log collection steps
-- **AND** they do not perform blocking, scanning, exploitation, remote access, or system modification
+#### Scenario: Normalized context can support filtering
+- **WHEN** the implementation adds normalized or template-like message context for filtering
+- **THEN** that normalized context is derived from local raw log text
+- **AND** it does not replace raw evidence or require external model services

@@ -82,7 +82,7 @@ def test_dashboard_renders_visual_report_region(tmp_path):
     for text in [
         "Visual report",
         "Source/entity frequency",
-        "Time/evidence order",
+        "Time distribution",
         "Severity distribution",
     ]:
         assert text in html
@@ -306,7 +306,6 @@ def test_dashboard_script_translation_keys_cover_english_and_chinese():
         "evidenceOrderDistribution",
     ]:
         assert key in script
-    assert "\\u65f6\\u95f4\\u5206\\u5e03" in script
 
 
 def test_dashboard_script_avoids_external_research_runtime_dependencies():

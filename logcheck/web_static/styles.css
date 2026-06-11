@@ -473,6 +473,108 @@ select {
   line-height: 1.45;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.language-control select {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 6px 8px;
+}
+
+.queue-toolbar {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px;
+}
+
+.compact-field {
+  margin-bottom: 0;
+}
+
+.compact-field input,
+.compact-field select {
+  min-height: 36px;
+}
+
+.compact-field select {
+  min-height: 36px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pagination-controls button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pagination-controls button:disabled {
+  color: #9aa39c;
+  cursor: not-allowed;
+}
+
+.attacker-ip-table {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+}
+
+.attacker-ip-row {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+  padding: 8px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.attacker-ip-row strong,
+.attacker-ip-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1080px) {
   .workspace {
     grid-template-columns: 260px minmax(0, 1fr);
@@ -494,12 +596,21 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .topbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .metrics,
   .export-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-grid {
     grid-template-columns: 1fr;
   }
 

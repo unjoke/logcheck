@@ -14,7 +14,16 @@
           <h1>Logcheck</h1>
           <p>Local Investigation Dashboard</p>
         </div>
-        <div class="run-state" id="run-state">Ready</div>
+        <div class="topbar-actions">
+          <label class="language-control">
+            <span data-i18n="languageLabel">Language</span>
+            <select id="language-select" aria-label="Language">
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+          <div class="run-state" id="run-state">Ready</div>
+        </div>
       </header>
 
       <section class="workspace" aria-label="Dashboard workspace">
@@ -75,7 +84,7 @@
                 </div>
               </article>
               <article class="chart-card" aria-labelledby="time-chart-title">
-                <h3 id="time-chart-title">Time/evidence order</h3>
+                <h3 id="time-chart-title" data-i18n="timeDistribution">Time distribution</h3>
                 <div id="time-chart" class="chart-body">
                   <p class="empty-state">Run analysis to populate local charts.</p>
                 </div>
@@ -83,6 +92,12 @@
               <article class="chart-card" aria-labelledby="severity-chart-title">
                 <h3 id="severity-chart-title">Severity distribution</h3>
                 <div id="severity-chart" class="chart-body">
+                  <p class="empty-state">Run analysis to populate local charts.</p>
+                </div>
+              </article>
+              <article class="chart-card attacker-ip-card" aria-labelledby="attacker-ip-title">
+                <h3 id="attacker-ip-title" data-i18n="attackerIpStatistics">Attacker IP statistics</h3>
+                <div id="attacker-ip-stats" class="attacker-ip-table">
                   <p class="empty-state">Run analysis to populate local charts.</p>
                 </div>
               </article>
@@ -94,9 +109,36 @@
               <h2 id="finding-queue-title">Finding queue</h2>
               <span id="queue-count">0 items</span>
             </div>
+            <div class="queue-toolbar">
+              <label class="field compact-field">
+                <span data-i18n="keywordFilter">Keyword filter</span>
+                <input id="finding-search" type="search" autocomplete="off">
+              </label>
+              <div class="filter-grid">
+                <label class="field compact-field">
+                  <span data-i18n="severityFilter">Severity</span>
+                  <select id="severity-filter">
+                    <option value="">All severities</option>
+                  </select>
+                </label>
+                <label class="field compact-field">
+                  <span data-i18n="ruleFilter">Rule</span>
+                  <select id="rule-filter">
+                    <option value="">All rules</option>
+                  </select>
+                </label>
+                <label class="field compact-field">
+                  <span data-i18n="sourceFilter">Source address</span>
+                  <select id="source-filter">
+                    <option value="">All sources</option>
+                  </select>
+                </label>
+              </div>
+            </div>
             <div id="finding-list" class="finding-list" role="list">
               <p class="empty-state">Run analysis to populate the queue.</p>
             </div>
+            <div id="finding-pagination" class="pagination-controls" aria-label="Finding pagination"></div>
           </section>
         </section>
 

@@ -82,10 +82,41 @@ def test_dashboard_renders_visual_report_region(tmp_path):
     for text in [
         "Visual report",
         "Source/entity frequency",
-        "Time/evidence order",
+        "Time distribution",
         "Severity distribution",
     ]:
         assert text in html
+
+
+def test_dashboard_renders_language_filter_pagination_and_attacker_ip_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for expected in [
+        'id="language-select"',
+        'id="finding-search"',
+        'id="severity-filter"',
+        'id="rule-filter"',
+        'id="source-filter"',
+        'id="finding-pagination"',
+        "Attacker IP statistics",
+        'id="attacker-ip-stats"',
+    ]:
+        assert expected in html
+
+
+def test_dashboard_time_chart_title_is_explicit(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Time distribution" in html
+    assert "Time/evidence order" not in html
 
 
 def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
@@ -146,19 +177,18 @@ def test_dashboard_script_uses_ascii_separators():
 
 def test_dashboard_script_renders_structured_selected_alert_detail():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_findings = script_function_body(script, "renderFindings")
 
-    assert re.search(
-        r"if \(state\.findings\.length\) {\s*renderSelectedAlert\(state\.findings\[0\], 0\);",
-        script,
-    )
     assert re.search(
         r'button\.addEventListener\("click", \(\) => {\s*'
         r'document\.querySelectorAll\("\.finding-card"\).*?'
         r"button\.classList\.add\(\"active\"\);\s*"
-        r"renderSelectedAlert\(finding, index\);",
-        script,
+        r"state\.selectedFindingIndex = originalIndex;\s*"
+        r"renderSelectedAlert\(finding, originalIndex\);",
+        render_findings,
         re.DOTALL,
     )
+    assert "renderSelectedAlert(pageFindings[0].finding, pageFindings[0].originalIndex)" in render_findings
 
     for expected in [
         "alert-detail-section",
@@ -177,13 +207,10 @@ def test_dashboard_script_renders_structured_selected_alert_detail():
 
 def test_dashboard_script_clears_stale_selected_alert_when_no_findings():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_findings = script_function_body(script, "renderFindings")
 
-    assert re.search(
-        r"else {\s*"
-        r'clearSelectedAlert\("No findings were produced for the selected local material\."\);\s*'
-        r"}",
-        script,
-    )
+    assert "if (!findings.length)" in render_findings
+    assert 'clearSelectedAlert(t("noFilteredFindings"))' in render_findings
     assert re.search(
         r"function renderError\(message\) {.*?"
         r'clearSelectedAlert\("Select local material and run analysis\."\);',
@@ -217,6 +244,42 @@ def test_dashboard_script_includes_local_chart_helpers():
         assert helper in script
     assert "renderCharts(payload)" in script
     assert "resetCharts()" in script
+
+
+def test_dashboard_script_handles_missing_chart_containers_defensively():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    reset_charts = script_function_body(script, "resetCharts")
+    render_charts = script_function_body(script, "renderCharts")
+
+    assert "if (!container)" in reset_charts
+    assert "filter(Boolean).length" in render_charts
+    assert 'findings.length ? "4 charts" : "0 charts"' not in script
+
+
+def test_dashboard_script_includes_pagination_filter_i18n_and_ip_helpers():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for expected in [
+        "TRANSLATIONS",
+        "setLanguage",
+        "applyFindingFilters",
+        "normalizeFilterText",
+        "paginateFindings",
+        "renderPagination",
+        "aggregateAttackerIps",
+        "renderAttackerIpStats",
+        "buildFilterOptions",
+    ]:
+        assert expected in script
+
+
+def test_dashboard_script_filters_before_paginating():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    body = script_function_body(script, "renderFindings")
+
+    assert "applyFindingFilters" in body
+    assert "paginateFindings" in body
+    assert body.index("applyFindingFilters") < body.index("paginateFindings")
 
 
 def test_dashboard_script_fetches_only_local_api_inputs():
@@ -268,6 +331,75 @@ def test_dashboard_export_downloads_blob_with_supported_filename():
     assert "link.download = exportFilename(format);" in download_export
     assert 'return "analysis.md";' in export_filename
     assert "return `analysis.${format}`;" in export_filename
+
+
+def test_dashboard_script_defaults_sample_and_reports_missing_input():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    render_samples = script_function_body(script, "renderSamples")
+    run_analysis = script_function_body(script, "runAnalysis")
+
+    assert 'option.value === "incident.log"' in render_samples
+    assert "defaultOption.selected = true" in render_samples
+    assert "function hasLocalInput()" in script
+    assert "if (!hasLocalInput())" in run_analysis
+    assert "Select at least one local log file or sample log." in run_analysis
+
+
+def test_dashboard_script_resets_filters_for_new_analysis():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+    run_analysis = script_function_body(script, "runAnalysis")
+    reset_filters = script_function_body(script, "resetFindingFilters")
+
+    assert "resetFindingFilters();" in run_analysis
+    for expected in [
+        'keyword: ""',
+        'severity: ""',
+        'rule: ""',
+        'source: ""',
+        'findingSearch.value = ""',
+        'severityFilter.value = ""',
+        'ruleFilter.value = ""',
+        'sourceFilter.value = ""',
+    ]:
+        assert expected in reset_filters
+
+
+def test_dashboard_script_translation_keys_cover_english_and_chinese():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "const TRANSLATIONS" in script
+    for key in [
+        "languageLabel",
+        "findingQueue",
+        "timeDistribution",
+        "attackerIpStatistics",
+        "keywordFilter",
+        "severityFilter",
+        "ruleFilter",
+        "sourceFilter",
+        "nextPage",
+        "previousPage",
+        "evidenceOrderDistribution",
+    ]:
+        assert key in script
+
+
+def test_dashboard_script_avoids_external_research_runtime_dependencies():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8").lower()
+
+    for forbidden in [
+        "logai",
+        "logbert",
+        "logpai",
+        "cdn.",
+        "http://",
+        "https://",
+        "geolocation",
+        "dns",
+        "threat-intelligence",
+        "threat intelligence",
+    ]:
+        assert forbidden not in script
 
 
 def test_dashboard_styles_include_responsive_chart_rules():
@@ -557,3 +689,18 @@ def test_dashboard_styles_prevent_chart_label_overlap():
     assert "grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1.8fr) minmax(24px, auto)" in styles
     assert ".chart-label" in styles
     assert "max-width: 100%" in styles
+
+
+def test_dashboard_styles_include_filters_pagination_and_attacker_ip_rules():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    for selector in [
+        ".language-control",
+        ".filter-grid",
+        ".queue-toolbar",
+        ".pagination-controls",
+        ".attacker-ip-table",
+        ".attacker-ip-row",
+    ]:
+        assert selector in styles
+    assert "overflow-wrap: anywhere" in styles

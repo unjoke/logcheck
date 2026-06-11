@@ -88,6 +88,51 @@ def test_dashboard_renders_visual_report_region(tmp_path):
         assert text in html
 
 
+def test_dashboard_renders_language_filter_pagination_and_attacker_ip_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for expected in [
+        'id="language-select"',
+        'id="finding-search"',
+        'id="severity-filter"',
+        'id="rule-filter"',
+        'id="source-filter"',
+        'id="finding-pagination"',
+        "Attacker IP statistics",
+        'id="attacker-ip-stats"',
+    ]:
+        assert expected in html
+
+
+def test_dashboard_time_chart_title_is_explicit(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Time distribution" in html
+    assert "Time/evidence order" not in html
+
+
+def test_dashboard_places_queue_and_detail_in_primary_investigation_lane(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'class="investigation-lane"' in html
+    finding_queue_position = html.index("Finding queue")
+    evidence_detail_position = html.index("Evidence detail")
+    visual_report_position = html.index("Visual report")
+    assert finding_queue_position < evidence_detail_position < visual_report_position
+
+
 def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
     client = make_app(tmp_path)
 
@@ -106,6 +151,75 @@ def test_dashboard_excludes_forbidden_remote_control_terms(tmp_path):
         "external report",
     ]:
         assert forbidden not in html
+
+
+def test_dashboard_script_includes_pagination_filter_i18n_and_ip_helpers():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    for helper in [
+        "TRANSLATIONS",
+        "setLanguage",
+        "applyFindingFilters",
+        "normalizeFilterText",
+        "paginateFindings",
+        "renderPagination",
+        "aggregateAttackerIps",
+        "renderAttackerIpStats",
+        "buildFilterOptions",
+    ]:
+        assert helper in script
+
+
+def test_dashboard_script_filters_before_paginating():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    render_findings = script_function_body(script, "renderFindings")
+    assert "applyFindingFilters" in render_findings
+    assert "paginateFindings" in render_findings
+    assert render_findings.index("applyFindingFilters") < render_findings.index("paginateFindings")
+
+
+def test_dashboard_script_translation_keys_cover_english_and_chinese():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    assert "const TRANSLATIONS" in script
+    for key in [
+        "languageLabel",
+        "findingQueue",
+        "timeDistribution",
+        "attackerIpStatistics",
+        "keywordFilter",
+        "severityFilter",
+        "ruleFilter",
+        "sourceFilter",
+        "nextPage",
+        "previousPage",
+        "evidenceOrderDistribution",
+    ]:
+        assert key in script
+    assert "\\u65f6\\u95f4\\u5206\\u5e03" in script
+
+
+def test_dashboard_script_avoids_external_research_runtime_dependencies():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8").lower()
+
+    for forbidden in [
+        "logai",
+        "logbert",
+        "logpai",
+        "fastwlat",
+        "maaloganalyzer",
+        "cdn.",
+        "http://",
+        "https://",
+        "geoip",
+        "mapbox",
+        "geolocation",
+        "dns",
+        "threat-intelligence",
+        "threat intelligence",
+    ]:
+        assert forbidden not in script
 
 
 def test_dashboard_script_includes_evidence_detail_fields():
@@ -217,6 +331,23 @@ def test_dashboard_script_includes_local_chart_helpers():
         assert helper in script
     assert "renderCharts(payload)" in script
     assert "resetCharts()" in script
+
+
+def test_dashboard_styles_include_filters_pagination_and_attacker_ip_rules():
+    styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
+
+    for selector in [
+        ".investigation-lane",
+        ".supporting-report",
+        ".language-control",
+        ".filter-grid",
+        ".queue-toolbar",
+        ".pagination-controls",
+        ".attacker-ip-table",
+        ".attacker-ip-row",
+    ]:
+        assert selector in styles
+    assert "overflow-wrap: anywhere" in styles
 
 
 def test_dashboard_script_fetches_only_local_api_inputs():

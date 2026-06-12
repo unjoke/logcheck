@@ -1,0 +1,16 @@
+workflow: full
+phase: build
+build_mode: subagent-driven-development
+isolation: branch
+verify_mode: null
+base_ref: 970a70a1c15f9a43c8e8f53bcdf2a659e7535178
+design_doc: docs/superpowers/specs/2026-06-11-enhance-finding-workbench-analytics-design.md
+plan: docs/superpowers/plans/2026-06-11-enhance-finding-workbench-analytics.md
+verify_result: pending
+verification_report: null
+branch_status: pending
+created_at: 2026-06-11
+verified_at: null
+archived: false
+handoff_context: openspec/changes/enhance-finding-workbench-analytics/.comet/handoff/design-context.json
+handoff_hash: 6ba186635b5186ce2c8b24ae484a41598fe688cc462db7e6b7bf466f04b82edf

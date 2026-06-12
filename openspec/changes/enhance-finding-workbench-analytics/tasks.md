@@ -19,10 +19,10 @@
 
 ## 3. Workbench Information Architecture
 
-- [ ] 3.1 Rebuild the static layout so source intake and summary are supporting regions, while finding queue and log detail form the primary investigation lane.
-- [ ] 3.2 Move visual report below or beside the investigation lane so it supports review without separating queue from detail.
-- [ ] 3.3 Keep selected alert, source context, reasoning, and raw `Log detail` together in the detail region.
-- [ ] 3.4 Add responsive CSS so mobile order is intake/summary, queue/filter, detail/evidence, visual report, insights/export.
+- [x] 3.1 Rebuild the static layout so source intake and summary are supporting regions, while finding queue and log detail form the primary investigation lane.
+- [x] 3.2 Move visual report below or beside the investigation lane so it supports review without separating queue from detail.
+- [x] 3.3 Keep selected alert, source context, reasoning, and raw `Log detail` together in the detail region.
+- [x] 3.4 Add responsive CSS so mobile order is intake/summary, queue/filter, detail/evidence, visual report, insights/export.
 - [ ] 3.5 Verify text does not overlap and fixed-format controls do not resize unpredictably at desktop and mobile widths.
 
 ## 4. Local Aggregation and Detection Review Logic

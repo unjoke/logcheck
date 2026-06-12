@@ -1,6 +1,16 @@
 const state = {
   latestAnalysisId: "",
   findings: [],
+  selectedFindingIndex: null,
+  language: localStorage.getItem("logcheckLanguage") || "en",
+  filters: {
+    keyword: "",
+    severity: "",
+    rule: "",
+    source: "",
+  },
+  findingPage: 1,
+  findingsPerPage: 10,
 };
 
 const form = document.querySelector("#analysis-form");
@@ -13,6 +23,12 @@ const evidenceDetail = document.querySelector("#evidence-detail");
 const insightList = document.querySelector("#insight-list");
 const exportButtons = Array.from(document.querySelectorAll(".export-button"));
 const chartCount = document.querySelector("#chart-count");
+const languageSelect = document.querySelector("#language-select");
+const findingSearch = document.querySelector("#finding-search");
+const severityFilter = document.querySelector("#severity-filter");
+const ruleFilter = document.querySelector("#rule-filter");
+const sourceFilter = document.querySelector("#source-filter");
+const findingPagination = document.querySelector("#finding-pagination");
 const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
@@ -26,7 +42,50 @@ const metrics = {
   high: document.querySelector("#metric-high"),
 };
 
+const TRANSLATIONS = {
+  en: {
+    languageLabel: "Language",
+    findingQueue: "Finding queue",
+    timeDistribution: "Time distribution",
+    attackerIpStatistics: "Attacker IP statistics",
+    keywordFilter: "Keyword filter",
+    severityFilter: "Severity",
+    ruleFilter: "Rule",
+    sourceFilter: "Source address",
+    previousPage: "Previous",
+    nextPage: "Next",
+    allSeverities: "All severities",
+    allRules: "All rules",
+    allSources: "All sources",
+    evidenceOrderDistribution: "Evidence order distribution",
+    noFindingsQueue: "No findings in the queue.",
+    noFilteredFindings: "No findings match the current filters.",
+    runCharts: "Run analysis to populate local charts.",
+  },
+  zh: {
+    languageLabel: "语言",
+    findingQueue: "发现队列",
+    timeDistribution: "时间分布",
+    attackerIpStatistics: "攻击 IP 统计",
+    keywordFilter: "关键词过滤",
+    severityFilter: "严重级别",
+    ruleFilter: "规则",
+    sourceFilter: "源地址",
+    previousPage: "上一页",
+    nextPage: "下一页",
+    allSeverities: "全部级别",
+    allRules: "全部规则",
+    allSources: "全部来源",
+    evidenceOrderDistribution: "证据顺序分布",
+    noFindingsQueue: "队列中没有发现。",
+    noFilteredFindings: "没有符合当前过滤条件的发现。",
+    runCharts: "运行分析后生成本地图表。",
+  },
+};
+
 document.addEventListener("DOMContentLoaded", () => {
+  languageSelect.value = state.language;
+  applyTranslations();
   loadSamples();
 });
 
@@ -45,6 +104,28 @@ exportButtons.forEach((button) => {
     window.location.assign(`/api/exports/${format}?analysis_id=${analysisId}`);
   });
 });
+
+languageSelect.addEventListener("change", () => {
+  setLanguage(languageSelect.value);
+});
+
+findingSearch.addEventListener("input", () => {
+  state.filters.keyword = findingSearch.value;
+  state.findingPage = 1;
+  renderFindings(state.findings);
+});
+
+for (const [element, key] of [
+  [severityFilter, "severity"],
+  [ruleFilter, "rule"],
+  [sourceFilter, "source"],
+]) {
+  element.addEventListener("change", () => {
+    state.filters[key] = element.value;
+    state.findingPage = 1;
+    renderFindings(state.findings);
+  });
+}
 
 async function loadSamples() {
   try {
@@ -108,33 +189,62 @@ async function runAnalysis() {
   }
 }
 
+function setLanguage(language) {
+  state.language = TRANSLATIONS[language] ? language : "en";
+  localStorage.setItem("logcheckLanguage", state.language);
+  languageSelect.value = state.language;
+  applyTranslations();
+  buildFilterOptions(state.findings);
+  renderFindings(state.findings);
+}
+
+function t(key) {
+  return (TRANSLATIONS[state.language] && TRANSLATIONS[state.language][key]) || TRANSLATIONS.en[key] || key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+}
+
 function renderResult(payload) {
   const summary = payload.summary || {};
   metrics.events.textContent = summary.total_events ?? 0;
   metrics.findings.textContent = summary.total_findings ?? state.findings.length;
   metrics.sources.textContent = Array.isArray(summary.analyzed_sources) ? summary.analyzed_sources.length : 0;
   metrics.high.textContent = countHighPriority(state.findings);
+  state.findingPage = 1;
+  buildFilterOptions(state.findings);
   renderFindings(state.findings);
   renderInsights(payload.insights || []);
   renderCharts(payload);
-  if (state.findings.length) {
-    renderSelectedAlert(state.findings[0], 0);
-  } else {
+  if (!state.findings.length) {
     clearSelectedAlert("No findings were produced for the selected local material.");
   }
 }
 
 function renderFindings(findings) {
-  queueCount.textContent = `${findings.length} ${findings.length === 1 ? "item" : "items"}`;
+  const filteredFindings = applyFindingFilters(findings);
+  const { pageCount, pageFindings, start } = paginateFindings(filteredFindings);
+  queueCount.textContent = `${filteredFindings.length} ${filteredFindings.length === 1 ? "item" : "items"}`;
   findingList.innerHTML = "";
   if (!findings.length) {
-    findingList.innerHTML = '<p class="empty-state">No findings in the queue.</p>';
+    findingList.innerHTML = `<p class="empty-state">${escapeHtml(t("noFindingsQueue"))}</p>`;
+    renderPagination(pageCount, filteredFindings.length);
     return;
   }
-  findings.forEach((finding, index) => {
+  if (!filteredFindings.length) {
+    findingList.innerHTML = `<p class="empty-state">${escapeHtml(t("noFilteredFindings"))}</p>`;
+    clearSelectedAlert(t("noFilteredFindings"));
+    renderPagination(pageCount, filteredFindings.length);
+    return;
+  }
+  pageFindings.forEach((finding, pageIndex) => {
+    const index = start + pageIndex;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `finding-card${index === 0 ? " active" : ""}`;
+    button.className = `finding-card${pageIndex === 0 ? " active" : ""}`;
     button.setAttribute("role", "listitem");
     button.innerHTML = `
       <div class="finding-title">
@@ -152,6 +262,111 @@ function renderFindings(findings) {
     });
     findingList.append(button);
   });
+  state.selectedFindingIndex = start;
+  renderSelectedAlert(pageFindings[0], start);
+  renderPagination(pageCount, filteredFindings.length);
+}
+
+function applyFindingFilters(findings) {
+  const keyword = normalizeFilterText(state.filters.keyword);
+  return findings.filter((finding) => {
+    if (state.filters.severity && String(finding.severity || "").toLowerCase() !== state.filters.severity) {
+      return false;
+    }
+    if (state.filters.rule && finding.rule_id !== state.filters.rule) {
+      return false;
+    }
+    if (state.filters.source && finding.source_address !== state.filters.source) {
+      return false;
+    }
+    if (!keyword) {
+      return true;
+    }
+    return normalizeFilterText(findingSearchText(finding)).includes(keyword);
+  });
+}
+
+function findingSearchText(finding) {
+  return [
+    finding.rule_id,
+    finding.severity,
+    finding.source_file,
+    finding.source_address,
+    finding.actor,
+    finding.target,
+    finding.matched_keyword,
+    finding.explanation,
+    ...(finding.evidence || []),
+  ]
+    .filter((value) => value !== null && value !== undefined)
+    .join(" ");
+}
+
+function normalizeFilterText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, " ip ")
+    .replace(/\b\d+\b/g, " number ")
+    .replace(/\b[a-z]:\\[^\s]+/g, " path ")
+    .replace(/\/[^\s]+/g, " path ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function paginateFindings(findings) {
+  const pageCount = Math.max(1, Math.ceil(findings.length / state.findingsPerPage));
+  state.findingPage = Math.min(Math.max(state.findingPage, 1), pageCount);
+  const start = (state.findingPage - 1) * state.findingsPerPage;
+  return {
+    pageCount,
+    pageFindings: findings.slice(start, start + state.findingsPerPage),
+    start,
+  };
+}
+
+function renderPagination(pageCount, total) {
+  findingPagination.innerHTML = "";
+  const previous = document.createElement("button");
+  previous.type = "button";
+  previous.textContent = t("previousPage");
+  previous.disabled = state.findingPage <= 1;
+  previous.addEventListener("click", () => {
+    state.findingPage -= 1;
+    renderFindings(state.findings);
+  });
+
+  const next = document.createElement("button");
+  next.type = "button";
+  next.textContent = t("nextPage");
+  next.disabled = state.findingPage >= pageCount || total === 0;
+  next.addEventListener("click", () => {
+    state.findingPage += 1;
+    renderFindings(state.findings);
+  });
+
+  const status = document.createElement("span");
+  status.textContent = `${state.findingPage} / ${pageCount}`;
+  findingPagination.append(previous, status, next);
+}
+
+function buildFilterOptions(findings) {
+  fillFilter(severityFilter, t("allSeverities"), uniqueValues(findings, (finding) => String(finding.severity || "").toLowerCase()));
+  fillFilter(ruleFilter, t("allRules"), uniqueValues(findings, (finding) => finding.rule_id));
+  fillFilter(sourceFilter, t("allSources"), uniqueValues(findings, (finding) => finding.source_address));
+}
+
+function uniqueValues(findings, getter) {
+  return Array.from(new Set(findings.map(getter).filter(Boolean))).sort();
+}
+
+function fillFilter(element, emptyLabel, values) {
+  const current = element.value;
+  element.innerHTML = "";
+  element.append(new Option(emptyLabel, ""));
+  for (const value of values) {
+    element.append(new Option(value, value));
+  }
+  element.value = values.includes(current) ? current : "";
 }
 
 function renderSelectedAlert(finding, index) {

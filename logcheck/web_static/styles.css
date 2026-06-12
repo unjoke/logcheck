@@ -122,10 +122,6 @@ select {
   min-width: 0;
 }
 
-.summary-panel {
-  grid-column: 1 / -1;
-}
-
 .supporting-report {
   grid-column: 2;
 }
@@ -250,6 +246,10 @@ select {
   margin: 7px 0 0;
   font-size: 26px;
   font-weight: 800;
+}
+
+.source-rail .metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .finding-list {

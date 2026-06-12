@@ -363,6 +363,15 @@ def test_dashboard_script_fetches_only_local_api_inputs():
     assert "analysis_id=${analysisId}" in export_target.group(1)
 
 
+def test_dashboard_script_builds_analysis_formdata_from_the_form():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    run_analysis = script_function_body(script, "runAnalysis")
+    assert "new FormData(form)" in run_analysis
+    assert 'body.append("files"' not in run_analysis
+    assert 'body.append("sample_ids"' not in run_analysis
+
+
 def test_dashboard_styles_include_responsive_chart_rules():
     styles = (PROJECT_ROOT / "logcheck" / "web_static" / "styles.css").read_text(encoding="utf-8")
 

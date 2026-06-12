@@ -12,10 +12,10 @@
 
 ## 2. Reference Learning and Local Architecture
 
-- [ ] 2.1 Record the specific FastWLAT strengths to adapt: dashboard summary, multi-view thinking, fast filters, rule/category review, and dimensional aggregation.
-- [ ] 2.2 Record the specific MaaLogAnalyzer strengths to adapt: master-detail flow, split evidence comparison, large-log ergonomics, search context jumps, and parser/projection separation.
-- [ ] 2.3 Explicitly reject copied code, external maps/GeoIP, online mode, framework rewrites, and runtime dependency on either project.
-- [ ] 2.4 Audit the current analysis payload, insight serialization, and frontend chart helpers to decide which analytics can be derived in the browser.
+- [x] 2.1 Record the specific FastWLAT strengths to adapt: dashboard summary, multi-view thinking, fast filters, rule/category review, and dimensional aggregation.
+- [x] 2.2 Record the specific MaaLogAnalyzer strengths to adapt: master-detail flow, split evidence comparison, large-log ergonomics, search context jumps, and parser/projection separation.
+- [x] 2.3 Explicitly reject copied code, external maps/GeoIP, online mode, framework rewrites, and runtime dependency on either project.
+- [x] 2.4 Audit the current analysis payload, insight serialization, and frontend chart helpers to decide which analytics can be derived in the browser.
 
 ## 3. Workbench Information Architecture
 

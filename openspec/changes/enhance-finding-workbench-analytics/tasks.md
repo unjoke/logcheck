@@ -27,7 +27,7 @@
 
 ## 4. Local Aggregation and Detection Review Logic
 
-- [ ] 4.1 Implement or update local helper functions for filtered finding sets, pagination state, time buckets, and source-address aggregation.
+- [x] 4.1 Implement or update local helper functions for filtered finding sets, pagination state, time buckets, and source-address aggregation.
 - [x] 4.2 Add normalized evidence text helper logic only if needed for useful keyword matching, preserving raw evidence display.
 - [ ] 4.3 Add local sequence/context grouping only from existing timestamps, source order, line numbers, or insight timeline data.
 - [ ] 4.4 Keep rule explanations deterministic and avoid importing external rulesets, model weights, or online inference.
@@ -37,16 +37,16 @@
 - [x] 5.1 Add finding queue pagination controls and integrate them with selection and filters.
 - [x] 5.2 Add a compact local i18n dictionary and visible English/Chinese language control.
 - [x] 5.3 Ensure core UI labels, status text, filter labels, chart labels, empty states, and export/status messages use the language dictionary.
-- [ ] 5.4 Render the time-distribution chart clearly in the visual report area.
-- [ ] 5.5 Render detailed attacker IP statistics with counts, severity mix, related rules, targets or actors, first/last observation, and evidence access.
+- [x] 5.4 Render the time-distribution chart clearly in the visual report area.
+- [x] 5.5 Render detailed attacker IP statistics with counts, severity mix, related rules, targets or actors, first/last observation, and evidence access.
 - [x] 5.6 Add keyword and facet filter controls that filter first and paginate second.
-- [ ] 5.7 Make selecting an attacker/source IP focus the queue and selected evidence without performing lookup, scan, block, or enrichment.
+- [x] 5.7 Make selecting an attacker/source IP focus the queue and selected evidence without performing lookup, scan, block, or enrichment.
 
 ## 6. Insight and Serialization Updates
 
-- [ ] 6.1 Extend `analysis-insights` data or web serialization only where frontend-only derivation is insufficient.
-- [ ] 6.2 Ensure source-address profile data remains local-only and does not perform enrichment or network actions.
-- [ ] 6.3 Ensure exports and selected finding details still show raw evidence after normalized filtering support is added.
+- [x] 6.1 Extend `analysis-insights` data or web serialization only where frontend-only derivation is insufficient.
+- [x] 6.2 Ensure source-address profile data remains local-only and does not perform enrichment or network actions.
+- [x] 6.3 Ensure exports and selected finding details still show raw evidence after normalized filtering support is added.
 
 ## 7. Verification
 

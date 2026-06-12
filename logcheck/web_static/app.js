@@ -238,15 +238,7 @@ async function runAnalysis() {
     return;
   }
 
-  const body = new FormData();
-  for (const file of fileInput.files) {
-    body.append("files", file);
-  }
-  for (const option of Array.from(sampleSelect.selectedOptions)) {
-    if (option.value) {
-      body.append("sample_ids", option.value);
-    }
-  }
+  const body = new FormData(form);
 
   setRunState("Running");
   toggleExports(false);

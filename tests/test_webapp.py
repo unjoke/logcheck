@@ -345,6 +345,15 @@ def test_dashboard_script_defaults_sample_and_reports_missing_input():
     assert "Select at least one local log file or sample log." in run_analysis
 
 
+def test_dashboard_script_builds_analysis_formdata_from_the_form():
+    script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
+
+    run_analysis = script_function_body(script, "runAnalysis")
+    assert "new FormData(form)" in run_analysis
+    assert 'body.append("files"' not in run_analysis
+    assert 'body.append("sample_ids"' not in run_analysis
+
+
 def test_dashboard_script_resets_filters_for_new_analysis():
     script = (PROJECT_ROOT / "logcheck" / "web_static" / "app.js").read_text(encoding="utf-8")
     run_analysis = script_function_body(script, "runAnalysis")

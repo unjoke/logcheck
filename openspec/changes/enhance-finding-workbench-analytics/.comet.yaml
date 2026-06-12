@@ -14,5 +14,5 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/enhance-finding-workbench-analytics/.comet/handoff/design-context.json
 handoff_hash: 6ba186635b5186ce2c8b24ae484a41598fe688cc462db7e6b7bf466f04b82edf
-build_command: "pytest -q"
-verify_command: "pytest -q"
+build_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest -q"
+verify_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest -q"

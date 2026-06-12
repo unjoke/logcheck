@@ -1,101 +1,134 @@
-## Purpose
+## ADDED Requirements
 
-Define the browser-based local Logcheck workspace, including local analysis, source context review, exports, safety boundaries, visualization, and verification evidence.
+### Requirement: Rebuild the workbench around adjacent finding and evidence review
+The web frontend SHALL make finding selection and selected log detail the primary adjacent investigation workflow.
 
-## Requirements
+#### Scenario: Desktop keeps queue and detail adjacent
+- **WHEN** the dashboard is displayed on a desktop-width viewport
+- **THEN** the finding queue and selected log detail are visible as adjacent regions in the primary investigation lane
+- **AND** the visual report does not sit between the queue and the selected log detail
 
-### Requirement: Provide browser-based Logcheck workspace
-The system SHALL provide a browser-based Logcheck web application as the primary frontend.
+#### Scenario: Mobile keeps queue and detail sequential
+- **WHEN** the dashboard is displayed on a mobile-width viewport
+- **THEN** the finding queue appears directly before the selected log detail in reading order
+- **AND** charts, exports, and secondary insights do not separate the selected finding from its raw evidence
 
-#### Scenario: Open web workspace
-- **WHEN** the user opens the Logcheck web frontend
-- **THEN** the first screen presents the working analysis interface rather than a landing page or desktop-style GUI shell
+#### Scenario: Visual report supports investigation instead of displacing it
+- **WHEN** the visual report is rendered
+- **THEN** it appears as a supporting summary surface below or beside the primary investigation lane
+- **AND** it does not push the finding queue below the first-screen evidence workflow on desktop layouts
 
-#### Scenario: Choose implementation direction
-- **WHEN** the web frontend rebuild begins
-- **THEN** the implementation direction is selected from Local Investigation Dashboard, Log Review Workbench, or Guided Analysis Wizard
+### Requirement: Paginate local finding queue
+The web frontend SHALL paginate the local finding queue when analysis results contain more findings than the configured page size.
 
-### Requirement: Support local log analysis workflow
-The web frontend SHALL let users run Logcheck analysis against local log inputs and review structured local results.
+#### Scenario: Finding queue shows first page
+- **WHEN** a local analysis result contains more findings than fit on one page
+- **THEN** the finding queue displays only the first page of findings
+- **AND** pagination controls show the current page and total pages
 
-#### Scenario: Analyze local logs
-- **WHEN** the user provides local log files or approved local sample logs and starts analysis
-- **THEN** the web frontend runs the existing local analysis pipeline and displays summary, findings, evidence, and insights
+#### Scenario: Changing finding page updates visible findings
+- **WHEN** the user moves to another finding page
+- **THEN** the queue updates to show findings for that page
+- **AND** the selected finding is either preserved when still visible or reset to the first finding on the new page
 
-#### Scenario: Preserve local source context
-- **WHEN** findings or insights are displayed
-- **THEN** the web frontend shows source context including file, line, raw evidence, actor, target, source address, or parser confidence when available
+#### Scenario: Pagination respects filtered results
+- **WHEN** a keyword or facet filter is active
+- **THEN** pagination is calculated from the filtered finding set
+- **AND** clearing the filter restores pagination for the full local result
 
-### Requirement: Show local visual report charts
-The web frontend SHALL show local visualization charts derived from the latest Logcheck analysis result.
+### Requirement: Switch workbench language between Chinese and English
+The web frontend SHALL provide a visible language control that switches core workbench interface text between English and Chinese without re-running local analysis.
 
-#### Scenario: Display charts after local analysis
-- **WHEN** the user runs analysis against local sample logs or uploaded local log files
-- **THEN** the web frontend displays source/entity frequency, time or evidence-order distribution, and severity distribution charts
-- **AND** the charts are derived from local analysis results already available to the frontend
+#### Scenario: Switch to Chinese
+- **WHEN** the user chooses Chinese from the language control
+- **THEN** navigation labels, analysis status, finding queue labels, filter labels, chart labels, empty states, and export/status messages render in Chinese
 
-#### Scenario: Chart empty states
+#### Scenario: Switch to English
+- **WHEN** the user chooses English from the language control
+- **THEN** navigation labels, analysis status, finding queue labels, filter labels, chart labels, empty states, and export/status messages render in English
+
+#### Scenario: Analysis data remains unchanged by language switch
+- **WHEN** the user changes the interface language after analysis has completed
+- **THEN** the selected local result, findings, evidence, charts, and filters remain available
+- **AND** only display labels and helper text change language
+
+### Requirement: Show explicit time distribution chart
+The web frontend SHALL display an explicit time-distribution chart in the visual report for the latest local analysis result.
+
+#### Scenario: Time chart uses parsed timestamps
+- **WHEN** findings include parsed timestamps
+- **THEN** the visual report shows a time-distribution chart bucketed by timestamp
+- **AND** each bucket shows the number of local findings in that time range
+
+#### Scenario: Time chart falls back to evidence order
+- **WHEN** findings do not include parsed timestamps
+- **THEN** the visual report still shows a time-distribution chart using deterministic evidence or source order
+- **AND** the chart label clearly indicates that the distribution is based on evidence order rather than actual timestamps
+
+#### Scenario: Time chart empty state
 - **WHEN** no analysis has run or the latest analysis has no findings
-- **THEN** the visual report area shows a clear empty state instead of broken or stale charts
+- **THEN** the time-distribution chart area shows a localized empty state instead of stale or broken chart content
 
-#### Scenario: Charts preserve local-only safety
-- **WHEN** the visual report area is displayed
-- **THEN** it does not introduce URL inputs, domain inputs, remote fetching, network scanning, blocking, exploitation, or external reporting controls
+### Requirement: Display detailed attacker IP statistics
+The web frontend SHALL display detailed local attacker IP statistics derived from findings with source addresses.
 
-#### Scenario: Charts remain responsive
-- **WHEN** the dashboard is viewed on desktop and mobile-width viewports
-- **THEN** the chart area remains readable without horizontal overflow or overlapping text
+#### Scenario: Attacker IP table includes investigation fields
+- **WHEN** local findings include source addresses
+- **THEN** the attacker IP statistics show each source address with finding count, severity mix, related rules, top target or actor values, first and last observed time or source reference, and representative evidence access
 
-### Requirement: Highlight privilege-escalation evidence in local review
-The web frontend SHALL make passive privilege-escalation evidence easy to identify in local analysis results.
+#### Scenario: Selecting attacker IP narrows review context
+- **WHEN** the user selects an attacker IP statistic row or chart item
+- **THEN** the finding queue can be filtered or focused to findings associated with that source address
+- **AND** the selected finding detail remains tied to local source evidence
 
-#### Scenario: Privilege-escalation indicators appear in findings
-- **WHEN** local logs contain sudo failure, su failure, sensitive-file access, or admin/root path access indicators
-- **THEN** the analysis result includes findings whose rule identifiers or explanations clearly identify privilege-escalation behavior
-- **AND** the evidence remains tied to local source file and line context
+#### Scenario: Attacker IP statistics are not generic entity frequency
+- **WHEN** local findings include source addresses
+- **THEN** attacker IP statistics are displayed in a dedicated area labeled for attacker/source IP review
+- **AND** the area includes investigation fields rather than only a bar count
 
-#### Scenario: Privilege-escalation remains passive
-- **WHEN** privilege-escalation evidence is displayed
-- **THEN** the dashboard provides review-oriented evidence and suggestions only
-- **AND** it does not perform account changes, blocking, exploitation, remote access, or system modification
+#### Scenario: No source addresses are available
+- **WHEN** local findings do not include source addresses
+- **THEN** the attacker IP statistics area shows a localized empty state
+- **AND** it does not invent remote enrichment or external lookup data
 
-### Requirement: Provide richer local incident sample
-The project SHALL include a bundled local incident sample suitable for coursework demonstration.
+### Requirement: Filter findings by keyword and facets
+The web frontend SHALL let users filter local findings by keyword text and common structured facets.
 
-#### Scenario: Incident sample exercises major report sections
-- **WHEN** the user analyzes the bundled incident sample
-- **THEN** the result includes enough local findings to populate source/entity, time or evidence-order, and severity charts
-- **AND** the sample includes brute-force, invalid-user, unauthorized-access, privilege-escalation, suspicious-command, and benign baseline lines
+#### Scenario: Keyword searches structured and evidence fields
+- **WHEN** the user enters a keyword filter
+- **THEN** the finding queue filters across rule id, severity, source file, source address, actor, target, matched keyword, explanation, and evidence text
+- **AND** matching remains local to the current analysis result
 
-### Requirement: Export reports from web frontend
-The web frontend SHALL expose local report export actions for supported report formats.
+#### Scenario: Filter supports normalized log text
+- **WHEN** evidence contains variable tokens such as addresses, numbers, paths, or timestamps
+- **THEN** keyword filtering can still match useful normalized message text where implemented
+- **AND** raw evidence remains visible in the selected finding detail
 
-#### Scenario: Export latest result
-- **WHEN** analysis has completed and the user requests an export
-- **THEN** the web frontend writes or downloads a local JSON, CSV, or Markdown report using the existing exporter behavior
+#### Scenario: Facets combine with keyword search
+- **WHEN** the user chooses severity, rule, source address, or similar local facets together with a keyword
+- **THEN** the displayed findings satisfy all active filters
+- **AND** pagination updates to the filtered result count
 
-#### Scenario: Export before analysis
-- **WHEN** the user requests an export before a result exists
-- **THEN** the web frontend reports that analysis must run before exporting
+### Requirement: Adapt external project strengths without runtime dependency or copying
+The web frontend SHALL adapt useful investigation patterns from FastWLAT and MaaLogAnalyzer only as original Logcheck behavior.
 
-### Requirement: Preserve local-only safety boundary
-The web frontend MUST remain a local analysis interface and MUST NOT introduce remote target actions.
+#### Scenario: FastWLAT-style strengths are adapted locally
+- **WHEN** the redesigned workbench presents summaries, filters, and source analysis
+- **THEN** it may use multi-dimensional local filters, rule-category review, and dashboard-level summaries inspired by FastWLAT
+- **AND** it does not copy FastWLAT source code, visual styling, maps, GeoIP behavior, or Electron/Vue architecture
 
-#### Scenario: Forbidden remote controls absent
-- **WHEN** the web frontend is displayed
-- **THEN** it does not show URL inputs, domain inputs, remote upload controls, network scan buttons, blocking controls, exploitation actions, or external reporting controls
+#### Scenario: MaaLogAnalyzer-style strengths are adapted locally
+- **WHEN** the redesigned workbench presents finding details and evidence context
+- **THEN** it may use master-detail review, split evidence comparison, search result context jumps, and parser/projection separation ideas inspired by MaaLogAnalyzer
+- **AND** it does not copy MaaLogAnalyzer source code, package structure, UI components, or framework architecture
 
-#### Scenario: CTF redirect environment remains safe
-- **WHEN** the project is demonstrated in an environment where domains redirect to `192.168.2.1`
-- **THEN** the web frontend workflow does not depend on domain entry, external browsing, or remote fetching
+### Requirement: Preserve local-only workbench safety during analytics enhancements
+The web frontend MUST keep all pagination, localization, charting, IP statistics, and filtering behavior local-only.
 
-### Requirement: Verify web frontend visually and automatically
-The web frontend SHALL be covered by focused automated checks and browser-based visual verification.
+#### Scenario: No remote controls are added
+- **WHEN** the enhanced workbench is displayed
+- **THEN** it does not show URL inputs, domain inputs, remote upload controls, network scan buttons, blocking controls, exploitation actions, GeoIP/map controls, external lookup buttons, or external reporting controls
 
-#### Scenario: Automated web checks
-- **WHEN** the web frontend test suite is run
-- **THEN** tests cover local input handling, analysis result rendering, report export states, and absence of forbidden remote controls
-
-#### Scenario: Browser visual verification
-- **WHEN** the implemented web frontend is reviewed in a browser
-- **THEN** screenshots or notes show that the selected web application shape is readable, non-overlapping, and usable on target desktop and mobile-width viewports
+#### Scenario: No runtime research fetch is required
+- **WHEN** the user filters findings or views chart/statistic panels
+- **THEN** the workbench does not fetch papers, GitHub projects, CDNs, threat intelligence, or external enrichment services

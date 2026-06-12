@@ -2,6 +2,7 @@
 change: enhance-finding-workbench-analytics
 design-doc: docs/superpowers/specs/2026-06-11-enhance-finding-workbench-analytics-design.md
 base-ref: 970a70a1c15f9a43c8e8f53bcdf2a659e7535178
+archived-with: 2026-06-12-enhance-finding-workbench-analytics
 ---
 
 # Enhance Finding Workbench Analytics Implementation Plan
@@ -14,6 +15,7 @@ base-ref: 970a70a1c15f9a43c8e8f53bcdf2a659e7535178
 
 **Tech Stack:** Python 3.11, Flask, pytest, static HTML/CSS/JavaScript, local browser verification.
 
+archived-with: 2026-06-12-enhance-finding-workbench-analytics
 ---
 
 ## File Structure

@@ -23,14 +23,14 @@
 - [x] 3.2 Move visual report below or beside the investigation lane so it supports review without separating queue from detail.
 - [x] 3.3 Keep selected alert, source context, reasoning, and raw `Log detail` together in the detail region.
 - [x] 3.4 Add responsive CSS so mobile order is intake/summary, queue/filter, detail/evidence, visual report, insights/export.
-- [ ] 3.5 Verify text does not overlap and fixed-format controls do not resize unpredictably at desktop and mobile widths.
+- [x] 3.5 Verify text does not overlap and fixed-format controls do not resize unpredictably at desktop and mobile widths.
 
 ## 4. Local Aggregation and Detection Review Logic
 
 - [x] 4.1 Implement or update local helper functions for filtered finding sets, pagination state, time buckets, and source-address aggregation.
 - [x] 4.2 Add normalized evidence text helper logic only if needed for useful keyword matching, preserving raw evidence display.
-- [ ] 4.3 Add local sequence/context grouping only from existing timestamps, source order, line numbers, or insight timeline data.
-- [ ] 4.4 Keep rule explanations deterministic and avoid importing external rulesets, model weights, or online inference.
+- [x] 4.3 Add local sequence/context grouping only from existing timestamps, source order, line numbers, or insight timeline data.
+- [x] 4.4 Keep rule explanations deterministic and avoid importing external rulesets, model weights, or online inference.
 
 ## 5. Workbench UI Implementation
 
@@ -50,8 +50,8 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run the Python test suite covering insights, web serialization, web app behavior, and existing analysis/export behavior.
-- [ ] 7.2 Run JavaScript syntax or static checks for `logcheck/web_static/app.js`.
-- [ ] 7.3 Run the local web dashboard and verify desktop and mobile layouts with the Browser plugin or Playwright.
-- [ ] 7.4 Verify a sample analysis demonstrates adjacent queue/detail review, paginated findings, Chinese/English switching, time distribution, detailed attacker IP statistics, and keyword/facet filtering.
-- [ ] 7.5 Record that runtime behavior remains offline/local-only and does not depend on the research links used during design.
+- [x] 7.1 Run the Python test suite covering insights, web serialization, web app behavior, and existing analysis/export behavior.
+- [x] 7.2 Run JavaScript syntax or static checks for `logcheck/web_static/app.js`.
+- [x] 7.3 Run the local web dashboard and verify desktop and mobile layouts with the Browser plugin or Playwright.
+- [x] 7.4 Verify a sample analysis demonstrates adjacent queue/detail review, paginated findings, Chinese/English switching, time distribution, detailed attacker IP statistics, and keyword/facet filtering.
+- [x] 7.5 Record that runtime behavior remains offline/local-only and does not depend on the research links used during design.

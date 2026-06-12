@@ -86,29 +86,29 @@
         <section class="investigation-lane" aria-label="Finding and evidence review">
           <section class="panel queue-panel" aria-labelledby="finding-queue-title">
             <div class="panel-heading">
-              <h2 id="finding-queue-title">Finding queue</h2>
+              <h2 id="finding-queue-title" data-i18n="findingQueue">Finding queue</h2>
               <span id="queue-count">0 items</span>
             </div>
             <div class="queue-toolbar" aria-label="Finding filters">
               <label class="field compact">
-                <span>Search findings</span>
+                <span data-i18n="keywordFilter">Keyword filter</span>
                 <input id="finding-search" name="finding-search" type="search" placeholder="Search evidence">
               </label>
               <div class="filter-grid">
                 <label class="field compact">
-                  <span>Severity</span>
+                  <span data-i18n="severityFilter">Severity</span>
                   <select id="severity-filter" name="severity-filter">
                     <option value="">All severities</option>
                   </select>
                 </label>
                 <label class="field compact">
-                  <span>Rule</span>
+                  <span data-i18n="ruleFilter">Rule</span>
                   <select id="rule-filter" name="rule-filter">
                     <option value="">All rules</option>
                   </select>
                 </label>
                 <label class="field compact">
-                  <span>Source</span>
+                  <span data-i18n="sourceFilter">Source address</span>
                   <select id="source-filter" name="source-filter">
                     <option value="">All sources</option>
                   </select>
@@ -158,7 +158,7 @@
                 </div>
               </article>
               <article class="chart-card" aria-labelledby="time-chart-title">
-                <h3 id="time-chart-title">Time distribution</h3>
+                <h3 id="time-chart-title" data-i18n="timeDistribution">Time distribution</h3>
                 <div id="time-chart" class="chart-body">
                   <p class="empty-state">Run analysis to populate local charts.</p>
                 </div>
@@ -174,7 +174,7 @@
 
           <section class="panel attacker-ip-panel" aria-labelledby="attacker-ip-title">
             <div class="panel-heading">
-              <h2 id="attacker-ip-title">Attacker IP statistics</h2>
+              <h2 id="attacker-ip-title" data-i18n="attackerIpStatistics">Attacker IP statistics</h2>
             </div>
             <div id="attacker-ip-stats" class="attacker-ip-table">
               <div class="attacker-ip-row empty-state">Run analysis to populate attacker IP statistics.</div>

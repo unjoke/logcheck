@@ -165,6 +165,7 @@ Logcheck/
   samples/
     auth.log                 Linux 认证日志样例
     app.log                  应用日志样例
+    access1.log              Middleware access-log SQL injection enumeration fixture
   tests/                     自动化测试
   docs/                      设计文档、计划和验证报告
   openspec/                  OpenSpec/Comet 规格与变更记录

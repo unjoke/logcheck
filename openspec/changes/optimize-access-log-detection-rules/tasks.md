@@ -2,15 +2,15 @@
 
 - [x] 1.1 Add a focused test or fixture helper that reads `samples/access1.log` and verifies it parses as common access-log input.
 - [x] 1.2 Add a rule regression test that expects `samples/access1.log` to produce a grouped `behavior.web_sql_injection` finding for `172.17.0.1` and `/index.php`.
-- [ ] 1.3 Add small parser unit tests for access method, target path, request text, status code, response size, user agent, source file, and line number.
-- [ ] 1.4 Add small rule unit tests for decoded SQLi indicators, boolean-blind `if(substr(...))` probes, bounded evidence, and non-repeated benign access lines.
+- [x] 1.3 Add small parser unit tests for access method, target path, request text, status code, response size, user agent, source file, and line number.
+- [x] 1.4 Add small rule unit tests for decoded SQLi indicators, boolean-blind `if(substr(...))` probes, bounded evidence, and non-repeated benign access lines.
 
 ## 2. Access Event Metadata
 
 - [x] 2.1 Extend the event model or metadata representation to carry access request method, status code, response size, user agent, decoded request text, and query context without breaking existing serializers.
 - [x] 2.2 Update `parse_line` access-log handling to extract the new metadata from common/combined access log lines.
 - [x] 2.3 Preserve original raw lines unchanged for evidence while exposing decoded request context to local rules.
-- [ ] 2.4 Update serialization/export tests if the new metadata is intentionally surfaced to the web UI or reports.
+- [x] 2.4 No serialization/export changes are required because the new metadata is not intentionally surfaced to the web UI or reports.
 
 ## 3. SQL Injection Behavior Rules
 
@@ -23,8 +23,8 @@
 ## 4. Examples And Documentation
 
 - [x] 4.1 Keep `samples/access1.log` as the full realistic middleware attack fixture.
-- [ ] 4.2 Add or update sample-listing documentation so `access1.log` is described as a SQL injection enumeration access log.
-- [ ] 4.3 If a shorter companion example is needed for UI demos, create it without replacing the full `access1.log` regression fixture.
+- [x] 4.2 Add or update sample-listing documentation so `access1.log` is described as a SQL injection enumeration access log.
+- [x] 4.3 No shorter companion example is needed for UI demos; the full `access1.log` regression fixture remains.
 
 ## 5. Verification
 

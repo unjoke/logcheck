@@ -1,5 +1,5 @@
 workflow: full
-phase: build
+phase: verify
 build_mode: subagent-driven-development
 isolation: branch
 build_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q"

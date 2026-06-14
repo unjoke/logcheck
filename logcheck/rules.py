@@ -128,6 +128,19 @@ def _substr_positions(text: str) -> set[int]:
     return {int(match.group(1)) for match in SUBSTR_POSITION_RE.finditer(text)}
 
 
+def _representative_evidence(events: list[Event], limit: int = 6) -> list[str]:
+    evidence: list[str] = []
+    seen: set[str] = set()
+    for event in events:
+        if event.raw_line in seen:
+            continue
+        evidence.append(event.raw_line)
+        seen.add(event.raw_line)
+        if len(evidence) >= limit:
+            break
+    return evidence
+
+
 def _web_sql_injection_findings(events: list[Event]) -> list[Finding]:
     buckets: dict[tuple[str, str], list[Event]] = defaultdict(list)
     matched_indicators: dict[tuple[str, str], set[str]] = defaultdict(set)
@@ -208,7 +221,7 @@ def _web_sql_injection_findings(events: list[Event]) -> list[Finding]:
                 explanation=(
                     f"{len(bucket)} URL-decoded web requests from {source} to {path} match SQL injection indicators."
                 ),
-                evidence=[event.raw_line for event in bucket[:5]],
+                evidence=_representative_evidence(bucket),
                 source_file=first.source_file,
                 line_number=first.line_number,
                 timestamp=first.timestamp,

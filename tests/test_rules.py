@@ -179,6 +179,58 @@ class RuleTests(unittest.TestCase):
             any(f.rule_id == "behavior.web_sql_injection" for f in findings)
         )
 
+    def test_web_sql_injection_evidence_is_bounded(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw sqli {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message=f"/index.php?id=1%20and%20if(substr(database(),{i},1)%20=%20'a',1,(select%20table_name%20from%20information_schema.tables))",
+                metadata={
+                    "decoded_request": f"/index.php?id=1 and if(substr(database(),{i},1) = 'a',1,(select table_name from information_schema.tables))",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 427,
+                },
+            )
+            for i in range(1, 21)
+        ]
+
+        finding = next(
+            finding for finding in detect_findings(events, default_config())
+            if finding.rule_id == "behavior.web_sql_injection"
+        )
+
+        self.assertLessEqual(len(finding.evidence), 6)
+        self.assertEqual(finding.count, 20)
+
+    def test_repeated_benign_access_requests_do_not_emit_sql_injection(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw benign {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message="/index.php?page=home",
+                metadata={
+                    "decoded_request": "/index.php?page=home",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 512,
+                },
+            )
+            for i in range(1, 30)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(any(f.rule_id == "behavior.web_sql_injection" for f in findings))
+
     def test_sudo_failure_creates_privilege_escalation_finding(self):
         event = Event(
             source_file="auth.log",

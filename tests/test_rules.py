@@ -103,6 +103,63 @@ class RuleTests(unittest.TestCase):
         self.assertIsNotNone(suspicious[0].severity_reason)
         self.assertIsNotNone(suspicious[0].confidence_reason)
 
+    def test_url_encoded_sql_injection_access_log_creates_behavior_finding(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=(
+                    '172.17.0.1 - - [01/Sep/2021:01:37:25 +0000] '
+                    '"GET /index.php?id=1%20and%20if(substr(database(),1,1)%20=%20'
+                    "'s',1,(select%20table_name%20from%20information_schema.tables)) HTTP/1.1\" "
+                    '200 472 "-" "python-requests/2.26.0"'
+                ),
+                category="access",
+                source_address="172.17.0.1",
+                message="/index.php?id=1%20and%20if(substr(database(),1,1)%20=%20's',1,(select%20table_name%20from%20information_schema.tables))",
+            )
+            for i in range(1, 6)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [finding for finding in findings if finding.rule_id == "behavior.web_sql_injection"]
+        self.assertEqual(len(sqli), 1)
+        self.assertEqual(sqli[0].severity, "critical")
+        self.assertEqual(sqli[0].source_address, "172.17.0.1")
+        self.assertEqual(sqli[0].count, 5)
+        self.assertIsNotNone(sqli[0].severity_reason)
+        self.assertIsNotNone(sqli[0].confidence_reason)
+
+    def test_boolean_blind_sql_injection_group_mentions_enumeration_traits(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message=f"/index.php?id=1%20and%20if(substr(database(),{i},1)%20=%20'a',1,(select%20table_name%20from%20information_schema.tables))",
+                metadata={
+                    "decoded_request": f"/index.php?id=1 and if(substr(database(),{i},1) = 'a',1,(select table_name from information_schema.tables))",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 420 + i,
+                    "user_agent": "python-requests/2.26.0",
+                },
+            )
+            for i in range(1, 7)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [finding for finding in findings if finding.rule_id == "behavior.web_sql_injection"]
+        self.assertEqual(len(sqli), 1)
+        self.assertEqual(sqli[0].target, "/index.php")
+        self.assertIn("blind", sqli[0].confidence_reason.lower())
+        self.assertIn("substr", sqli[0].matched_keyword)
+
     def test_sudo_failure_creates_privilege_escalation_finding(self):
         event = Event(
             source_file="auth.log",

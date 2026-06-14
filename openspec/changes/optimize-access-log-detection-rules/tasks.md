@@ -14,11 +14,11 @@
 
 ## 3. SQL Injection Behavior Rules
 
-- [ ] 3.1 Refactor SQLi detection helpers for decoded text normalization, indicator extraction, request grouping, and request-shape fingerprinting.
-- [ ] 3.2 Group candidate access events by source address and target path, with optional user-agent or query-shape support when useful.
-- [ ] 3.3 Detect boolean-blind enumeration traits: repeated conditional expressions, `substr` position coverage, extraction targets, repeated request count, and response-size variance.
+- [x] 3.1 Refactor SQLi detection helpers for decoded text normalization, indicator extraction, request grouping, and request-shape fingerprinting.
+- [x] 3.2 Group candidate access events by source address and target path, with optional user-agent or query-shape support when useful.
+- [x] 3.3 Detect boolean-blind enumeration traits: repeated conditional expressions, `substr` position coverage, extraction targets, repeated request count, and response-size variance.
 - [ ] 3.4 Emit compact grouped findings with severity, confidence reason, severity reason, matched indicators, count, source context, target path, and bounded representative evidence.
-- [ ] 3.5 Keep all detection local-only and avoid any URL/domain fetching, scanning, exploitation, blocking, or external reporting behavior.
+- [x] 3.5 Keep all detection local-only and avoid any URL/domain fetching, scanning, exploitation, blocking, or external reporting behavior.
 
 ## 4. Examples And Documentation
 

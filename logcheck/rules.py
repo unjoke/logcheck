@@ -135,6 +135,8 @@ def _web_sql_injection_findings(events: list[Event]) -> list[Finding]:
     response_sizes: dict[tuple[str, str], set[int]] = defaultdict(set)
     extraction_targets: dict[tuple[str, str], set[str]] = defaultdict(set)
     for event in events:
+        if event.category != "access":
+            continue
         text = _access_request_text(event)
         indicators = _sql_injection_indicators(text)
         if len(indicators) < 2:

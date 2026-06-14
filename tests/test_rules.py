@@ -160,6 +160,25 @@ class RuleTests(unittest.TestCase):
         self.assertIn("blind", sqli[0].confidence_reason.lower())
         self.assertIn("substr", sqli[0].matched_keyword)
 
+    def test_repeated_non_access_sql_text_does_not_emit_web_sql_injection(self):
+        events = [
+            Event(
+                source_file="app.log",
+                line_number=i,
+                raw_line="debug query select table_name from information_schema.tables and if(substr(database(),1,1) = 'a', 1, 0)",
+                category="application",
+                source_address="172.17.0.1",
+                message="debug query select table_name from information_schema.tables and if(substr(database(),1,1) = 'a', 1, 0)",
+            )
+            for i in range(1, 8)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(
+            any(f.rule_id == "behavior.web_sql_injection" for f in findings)
+        )
+
     def test_sudo_failure_creates_privilege_escalation_finding(self):
         event = Event(
             source_file="auth.log",

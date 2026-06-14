@@ -3,14 +3,17 @@ name = "logcheck"
 version = "0.1.0"
 description = "Offline log intrusion behavior detector for course design"
 requires-python = ">=3.11"
-dependencies = ["PyQt6>=6.11"]
+dependencies = ["Flask>=3.0"]
 
 [project.scripts]
 logcheck = "logcheck.cli:main"
-logcheck-desktop = "logcheck.desktop:main"
+logcheck-web = "logcheck.webapp:main"
 
 [tool.setuptools]
 packages = ["logcheck"]
+
+[tool.setuptools.package-data]
+logcheck = ["web_static/*"]
 
 [build-system]
 requires = ["setuptools>=68"]

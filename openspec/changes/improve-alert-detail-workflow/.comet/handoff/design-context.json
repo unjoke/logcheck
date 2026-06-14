@@ -1,0 +1,14 @@
+{
+  "change": "improve-alert-detail-workflow",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "0f2e3e1de24ae21088c79f9b98e5608012c873b229b4ba632e5b8c47c8ef5b56",
+  "files": [
+    { "path": "openspec/changes/improve-alert-detail-workflow/proposal.md", "sha256": "b7c170e77363e97c5786ec4117b17089e9d5f2063b269b17df91bc41bf637cab" },
+    { "path": "openspec/changes/improve-alert-detail-workflow/design.md", "sha256": "31b0ef16ba0032e0f69b1b3bc23047387ff7c52b574149253b76deb619ac239d" },
+    { "path": "openspec/changes/improve-alert-detail-workflow/tasks.md", "sha256": "bd5654a658275cf56d1618c76ce447a3056b683c1f6f42eb8b33b2f987c7ed11" },
+    { "path": "openspec/changes/improve-alert-detail-workflow/specs/web-frontend/spec.md", "sha256": "5728f32a1fabf3ca9d5e7192192b2e465d073ea17fe9ddea2cb8dd1c6ae9919d" }
+  ]
+}

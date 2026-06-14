@@ -1,63 +1,35 @@
 ## Purpose
-The intrusion detection rules capability detects keyword and repeated-behavior indicators from parsed local log events, classifies finding severity, and supports local configurable rule files.
+
+Define local intrusion detection rule behavior, severity explanation, confidence explanation, and safe enhanced rule configuration.
 
 ## Requirements
 
-### Requirement: Detect keyword indicators
-The system SHALL detect intrusion-related keywords such as failed login, unauthorized access, invalid user, authentication failure, permission denied, sudo failure, and suspicious command execution.
+### Requirement: Detect configurable behavior patterns
+The intrusion detection rules capability SHALL detect configurable behavior patterns beyond individual keyword matches.
 
-#### Scenario: Failed login keyword match
-- **WHEN** a parsed log event contains a failed-login indicator
-- **THEN** the system emits a finding with a rule identifier, severity, matched keyword, evidence line, and explanation
+#### Scenario: Suspicious command pattern
+- **WHEN** parsed events contain suspicious command execution indicators
+- **THEN** the system emits a behavior-pattern finding with rule identifier, severity, confidence, matched evidence, and explanation
 
-### Requirement: Detect repeated suspicious behavior
-The system SHALL detect repeated suspicious behavior from the same actor or source address within a configurable time window.
+#### Scenario: Multi-signal suspicious actor
+- **WHEN** one actor or source address triggers multiple lower-severity indicators in a local analysis run
+- **THEN** the system can emit a correlated behavior finding with evidence references
 
-#### Scenario: Brute force threshold exceeded
-- **WHEN** one source address produces failed-login events at or above the configured threshold within the time window
-- **THEN** the system emits a brute-force finding with the source address, count, window, severity, and supporting evidence
+### Requirement: Explain severity and confidence
+The intrusion detection rules capability SHALL explain why each finding received its severity and confidence.
 
-### Requirement: Support configurable rules
-The system SHALL load detection rules and thresholds from a local configuration file while providing secure defaults when no configuration is supplied.
-
-#### Scenario: Use default rules
-- **WHEN** the user runs analysis without a custom rule file
-- **THEN** the system applies the default course-demo rule set
-
-#### Scenario: Use custom threshold
-- **WHEN** the user supplies a configuration file with a changed brute-force threshold
-- **THEN** the system applies that threshold in the repeated-behavior analysis
-
-#### Scenario: Load JSON rule file
-- **WHEN** the user supplies a readable local JSON rule file with `keywords` and optional `brute_force` settings
-- **THEN** the system loads keyword groups and brute-force parameters from that file
-- **AND** subsequent analysis uses the loaded rule configuration
-
-#### Scenario: Load YAML rule file when parser is available
-- **WHEN** the user supplies a readable local YAML rule file with `keywords` and optional `brute_force` settings
-- **AND** the local runtime has YAML parser support
-- **THEN** the system loads keyword groups and brute-force parameters from that file
-- **AND** subsequent analysis uses the loaded rule configuration
-
-#### Scenario: Reject invalid structured rule file
-- **WHEN** a supplied JSON or YAML rule file is malformed or does not contain the expected structured values
-- **THEN** the system rejects the file with a clear error
-- **AND** does not silently fall back to a different custom rule set
-
-### Requirement: Export active rule configuration
-The system SHALL serialize the active detection rule configuration to a local structured file that users can inspect and edit.
-
-#### Scenario: Export rules as JSON
-- **WHEN** the user requests a rule configuration download from the desktop frontend
-- **THEN** the system writes the active keyword groups and brute-force parameters as readable JSON
-
-#### Scenario: Exported rules can be re-imported
-- **WHEN** the user imports a rule JSON file previously exported by the system
-- **THEN** the loaded detection configuration is equivalent to the exported active configuration
-
-### Requirement: Classify finding severity
-The system SHALL classify each finding as low, medium, high, or critical based on rule type, event count, and confidence.
-
-#### Scenario: Severity appears in result
+#### Scenario: Severity explanation
 - **WHEN** the system emits a finding
-- **THEN** the finding includes a severity value suitable for terminal display and report export
+- **THEN** the finding includes or can derive a human-readable severity reason based on rule type, count, evidence, and configured thresholds
+
+#### Scenario: Confidence explanation
+- **WHEN** the system emits a finding from a behavior pattern
+- **THEN** the finding includes or can derive a confidence reason that distinguishes exact keyword matches, repeated behavior, and correlated signals
+
+### Requirement: Validate enhanced rule configuration safely
+The intrusion detection rules capability SHALL validate enhanced local rule configuration before applying it.
+
+#### Scenario: Reject unsafe or malformed enhanced rules
+- **WHEN** a local rule file contains malformed behavior patterns, invalid thresholds, or unsupported rule fields
+- **THEN** the system rejects the file with a clear error
+- **AND** it does not silently apply partial unsafe configuration

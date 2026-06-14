@@ -1,0 +1,18 @@
+workflow: full
+phase: verify
+build_mode: subagent-driven-development
+isolation: branch
+build_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
+verify_command: "bash worktmp/comet_build_improve_alert_detail_workflow.sh"
+verify_mode: full
+base_ref: 959fb8ec6c2b21667fb96ddc81c11dde92a4435c
+design_doc: docs/superpowers/specs/2026-06-09-improve-alert-detail-workflow-design.md
+plan: docs/superpowers/plans/2026-06-09-improve-alert-detail-workflow.md
+verify_result: pending
+verification_report: docs/superpowers/reports/2026-06-09-improve-alert-detail-workflow-verify.md
+branch_status: pending
+created_at: 2026-06-09
+verified_at: null
+archived: false
+handoff_context: openspec/changes/improve-alert-detail-workflow/.comet/handoff/design-context.json
+handoff_hash: 0f2e3e1de24ae21088c79f9b98e5608012c873b229b4ba632e5b8c47c8ef5b56

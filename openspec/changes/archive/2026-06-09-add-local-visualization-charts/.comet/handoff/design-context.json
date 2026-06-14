@@ -1,0 +1,14 @@
+{
+  "change": "add-local-visualization-charts",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "006c3e1ad5fd26c865af524e926c1f26575a97e56515d9fb49793c1f45df0576",
+  "files": [
+    { "path": "openspec/changes/add-local-visualization-charts/proposal.md", "sha256": "e34f2e9a9ac79a89ba7f368b271988c566f3944cf49e7251582d0e63766f284c" },
+    { "path": "openspec/changes/add-local-visualization-charts/design.md", "sha256": "36aafd99f88065714b362926d4e7c6d0b224cc57fa6579020d4abf8607014810" },
+    { "path": "openspec/changes/add-local-visualization-charts/tasks.md", "sha256": "eacc308fb096da2380b027184cd18628856837a03c5378549e836b3cde380dff" },
+    { "path": "openspec/changes/add-local-visualization-charts/specs/web-frontend/spec.md", "sha256": "0c9484592315e22279784aff8e276674ff6c10134386710dbf7129f18ccdc5e2" }
+  ]
+}

@@ -7,6 +7,10 @@ python -m logcheck.cli samples/auth.log samples/app.log --out-dir outputs --form
 python -m unittest discover -s tests -v
 ```
 
+## Web Frontend Evidence
+
+Use `docs/web-frontend-verification.md` for the course deliverable evidence. It records the local browser dashboard checks, desktop and mobile viewport layout metrics, local-only safety boundary checks, and the final automated verification commands.
+
 ## Report Mapping
 
 - 绪论：说明日志分析在入侵检测中的意义，介绍暴力破解、未授权访问、权限失败等行为。

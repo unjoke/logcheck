@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+from urllib.parse import unquote_plus, urlsplit
 
 from .models import Event
 
@@ -16,6 +17,13 @@ LINUX_AUTH_RE = re.compile(
 APP_RE = re.compile(
     rf"^(?P<date>\d{{4}}-\d{{2}}-\d{{2}})\s+(?P<time>\d{{2}}:\d{{2}}:\d{{2}})\s+"
     rf"(?P<level>\w+)\s+(?P<message>.*)$",
+    re.IGNORECASE,
+)
+ACCESS_RE = re.compile(
+    rf"^(?P<ip>\d{{1,3}}(?:\.\d{{1,3}}){{3}})\s+\S+\s+\S+\s+\[(?P<access_time>[^\]]+)\]\s+"
+    rf'"(?P<method>[A-Z]+)\s+(?P<request>\S+)\s+HTTP/[0-9.]+"\s+'
+    rf"(?P<status>\d{{3}})\s+(?P<size>\S+)"
+    rf'(?:\s+"(?P<referrer>[^"]*)"\s+"(?P<user_agent>[^"]*)")?',
     re.IGNORECASE,
 )
 USER_PATTERNS = (
@@ -65,6 +73,32 @@ def parse_line(source_file: str, line_number: int, raw_line: str) -> Event:
             actor=_extract_actor(line),
             source_address=_extract_ip(line),
             message=message,
+        )
+
+    access_match = ACCESS_RE.match(line)
+    if access_match:
+        request = access_match.group("request")
+        target = urlsplit(request).path or request
+        size_text = access_match.group("size")
+        metadata = {
+            "method": access_match.group("method").upper(),
+            "request": request,
+            "decoded_request": unquote_plus(request),
+            "path": target,
+            "status_code": int(access_match.group("status")),
+            "response_size": int(size_text) if size_text.isdigit() else None,
+            "referrer": access_match.group("referrer") or None,
+            "user_agent": access_match.group("user_agent") or None,
+        }
+        return Event(
+            source_file=source_file,
+            line_number=line_number,
+            raw_line=line,
+            category="access",
+            target=target,
+            source_address=access_match.group("ip"),
+            message=request,
+            metadata=metadata,
         )
 
     return Event(source_file=source_file, line_number=line_number, raw_line=line)

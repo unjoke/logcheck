@@ -1,0 +1,16 @@
+workflow: full
+phase: build
+build_mode: null
+isolation: null
+verify_mode: null
+base_ref: 2a0237fbd5600e9aa94db9df44d9082161dccc30
+design_doc: docs/superpowers/specs/2026-06-10-fix-export-and-improve-detection-design.md
+plan: docs/superpowers/plans/2026-06-10-fix-export-and-improve-detection.md
+verify_result: pending
+verification_report: null
+branch_status: pending
+created_at: 2026-06-10
+verified_at: null
+archived: false
+handoff_context: openspec/changes/fix-export-and-improve-detection/.comet/handoff/design-context.json
+handoff_hash: 2c90d70ae586511ca58172a23d9e3bb7ee7c15ef07ea4d180b46ead2c74b49d5

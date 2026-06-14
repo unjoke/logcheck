@@ -1,0 +1,15 @@
+{
+  "change": "rebuild-web-frontend",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3f4714114a76d00e9c285965715e26b38900bcd8d82ff7ca680c1964737aab15",
+  "files": [
+    { "path": "openspec/changes/rebuild-web-frontend/proposal.md", "sha256": "86371b5b003dc1c7589bc71ca05f591dcb431b1977c1bc84605a593690650abe" },
+    { "path": "openspec/changes/rebuild-web-frontend/design.md", "sha256": "e00bba601c79eb2f60c3859f5125757b975d7c2eebb3cca39139ff1f5dc547ff" },
+    { "path": "openspec/changes/rebuild-web-frontend/tasks.md", "sha256": "8e92f4abc0f7f836f9829021fd1eeba35076e9f14f327c5c66a6d3e01c02294a" },
+    { "path": "openspec/changes/rebuild-web-frontend/specs/course-deliverables/spec.md", "sha256": "87d7f152094208ccf6ac7dfc2d444eefef0e6876fe6ce839e12c4669748ccf9a" },
+    { "path": "openspec/changes/rebuild-web-frontend/specs/web-frontend/spec.md", "sha256": "a8f3bdd0e7d84ff4d88986c5764b9ec9a9fddbb688a7dc8b1e7ab63f7ba72770" }
+  ]
+}

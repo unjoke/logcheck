@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 from urllib.parse import unquote_plus, urlsplit
 
+from .ip_context import classify_ip_address
 from .models import Event
 
 
@@ -52,32 +53,45 @@ def parse_line(source_file: str, line_number: int, raw_line: str) -> Event:
     linux_match = LINUX_AUTH_RE.match(line)
     if linux_match:
         message = linux_match.group("message")
+        source_address = _extract_ip(line)
         return Event(
             source_file=source_file,
             line_number=line_number,
             raw_line=line,
             category="auth",
             actor=_extract_actor(line),
-            source_address=_extract_ip(line),
+            source_address=source_address,
             message=message,
+            metadata={
+                "source_address_context": classify_ip_address(source_address).to_dict()
+                if source_address
+                else None
+            },
         )
 
     app_match = APP_RE.match(line)
     if app_match:
         message = app_match.group("message")
+        source_address = _extract_ip(line)
         return Event(
             source_file=source_file,
             line_number=line_number,
             raw_line=line,
             category="application",
             actor=_extract_actor(line),
-            source_address=_extract_ip(line),
+            source_address=source_address,
             message=message,
+            metadata={
+                "source_address_context": classify_ip_address(source_address).to_dict()
+                if source_address
+                else None
+            },
         )
 
     access_match = ACCESS_RE.match(line)
     if access_match:
         request = access_match.group("request")
+        source_address = access_match.group("ip")
         target = urlsplit(request).path or request
         size_text = access_match.group("size")
         metadata = {
@@ -96,9 +110,12 @@ def parse_line(source_file: str, line_number: int, raw_line: str) -> Event:
             raw_line=line,
             category="access",
             target=target,
-            source_address=access_match.group("ip"),
+            source_address=source_address,
             message=request,
-            metadata=metadata,
+            metadata={
+                **metadata,
+                "source_address_context": classify_ip_address(source_address).to_dict(),
+            },
         )
 
     return Event(source_file=source_file, line_number=line_number, raw_line=line)

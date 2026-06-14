@@ -8,8 +8,8 @@
 ## 2. Access Event Metadata
 
 - [x] 2.1 Extend the event model or metadata representation to carry access request method, status code, response size, user agent, decoded request text, and query context without breaking existing serializers.
-- [ ] 2.2 Update `parse_line` access-log handling to extract the new metadata from common/combined access log lines.
-- [ ] 2.3 Preserve original raw lines unchanged for evidence while exposing decoded request context to local rules.
+- [x] 2.2 Update `parse_line` access-log handling to extract the new metadata from common/combined access log lines.
+- [x] 2.3 Preserve original raw lines unchanged for evidence while exposing decoded request context to local rules.
 - [ ] 2.4 Update serialization/export tests if the new metadata is intentionally surfaced to the web UI or reports.
 
 ## 3. SQL Injection Behavior Rules

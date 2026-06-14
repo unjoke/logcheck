@@ -2,6 +2,8 @@ workflow: full
 phase: build
 build_mode: subagent-driven-development
 isolation: branch
+build_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q"
+verify_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q"
 verify_mode: null
 base_ref: 92b4b1762c6ac1830bd1bee127673d69fed94028
 design_doc: docs/superpowers/specs/2026-06-14-optimize-access-log-detection-rules-design.md

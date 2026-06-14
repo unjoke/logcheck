@@ -1,7 +1,7 @@
 ## 1. Regression Characterization
 
-- [ ] 1.1 Add a focused test or fixture helper that reads `samples/access1.log` and verifies it parses as common access-log input.
-- [ ] 1.2 Add a rule regression test that expects `samples/access1.log` to produce a grouped `behavior.web_sql_injection` finding for `172.17.0.1` and `/index.php`.
+- [x] 1.1 Add a focused test or fixture helper that reads `samples/access1.log` and verifies it parses as common access-log input.
+- [x] 1.2 Add a rule regression test that expects `samples/access1.log` to produce a grouped `behavior.web_sql_injection` finding for `172.17.0.1` and `/index.php`.
 - [ ] 1.3 Add small parser unit tests for access method, target path, request text, status code, response size, user agent, source file, and line number.
 - [ ] 1.4 Add small rule unit tests for decoded SQLi indicators, boolean-blind `if(substr(...))` probes, bounded evidence, and non-repeated benign access lines.
 
@@ -22,7 +22,7 @@
 
 ## 4. Examples And Documentation
 
-- [ ] 4.1 Keep `samples/access1.log` as the full realistic middleware attack fixture.
+- [x] 4.1 Keep `samples/access1.log` as the full realistic middleware attack fixture.
 - [ ] 4.2 Add or update sample-listing documentation so `access1.log` is described as a SQL injection enumeration access log.
 - [ ] 4.3 If a shorter companion example is needed for UI demos, create it without replacing the full `access1.log` regression fixture.
 

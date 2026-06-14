@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 from logcheck.config import config_to_dict, default_config, load_config
 from logcheck.models import DetectionConfig, Event
+from logcheck.parsers import parse_files
 from logcheck.rules import detect_findings
 
 
@@ -159,6 +160,26 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(sqli[0].target, "/index.php")
         self.assertIn("blind", sqli[0].confidence_reason.lower())
         self.assertIn("substr", sqli[0].matched_keyword)
+
+    def test_access1_sample_creates_grouped_sql_injection_finding(self):
+        sample = Path(__file__).resolve().parent.parent / "samples" / "access1.log"
+        events = parse_files([sample])
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [
+            finding for finding in findings
+            if finding.rule_id == "behavior.web_sql_injection"
+            and finding.source_address == "172.17.0.1"
+            and finding.target == "/index.php"
+        ]
+        self.assertEqual(len(sqli), 1)
+        self.assertGreaterEqual(sqli[0].count, 100)
+        self.assertLessEqual(len(sqli[0].evidence), 6)
+        self.assertTrue(
+            any(token in (sqli[0].matched_keyword or "") for token in ("information_schema", "substr", "select flag"))
+        )
+        self.assertIn("blind", (sqli[0].confidence_reason or "").lower())
 
     def test_repeated_non_access_sql_text_does_not_emit_web_sql_injection(self):
         events = [

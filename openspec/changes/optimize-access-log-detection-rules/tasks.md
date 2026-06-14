@@ -28,7 +28,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run parser, rules, sample, and serialization tests affected by the change.
-- [ ] 5.2 Run the full Python test suite when targeted tests pass.
-- [ ] 5.3 Run frontend/static checks only if exposed web serialization or UI sample listing changes.
-- [ ] 5.4 Record verification output and confirm OpenSpec validation remains strict-pass.
+- [x] 5.1 Run parser, rules, sample, and serialization tests affected by the change.
+- [x] 5.2 Run the full Python test suite when targeted tests pass.
+- [x] 5.3 Frontend/static checks were not required because this change did not expose web serialization or UI sample listing changes.
+- [x] 5.4 Record verification output and confirm OpenSpec validation remains strict-pass.

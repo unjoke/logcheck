@@ -1,6 +1,6 @@
 workflow: full
 phase: build
-build_mode: subagent-driven-development
+build_mode: executing-plans
 isolation: worktree
 verify_mode: null
 base_ref: e0c45d3280ad0fbf8904ede96545f9447d0b3530
@@ -14,3 +14,5 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/enhance-visual-reports-and-log-samples/.comet/handoff/design-context.json
 handoff_hash: d03030ac5d48624dd6bca915e7fd70f692756b1968b2184340c049eed5f3e1b3
+build_command: pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q
+verify_command: pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q

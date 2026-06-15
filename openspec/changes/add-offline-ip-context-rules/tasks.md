@@ -6,4 +6,4 @@
 - [x] Attach source address context during parsing without changing existing event fields.
 - [x] Add `behavior.public_source_cluster` to the rule engine with bounded evidence and explanations.
 - [x] Run focused tests, full Python tests, and syntax checks.
-- [ ] Commit and push only files changed for this enhancement.
+- [x] Commit and push only files changed for this enhancement.

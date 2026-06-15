@@ -1,0 +1,18 @@
+workflow: full
+phase: verify
+build_mode: executing-plans
+isolation: branch
+verify_mode: null
+base_ref: f95403e0f28219aee630bed44884bfc2110103ab
+design_doc: docs/superpowers/specs/2026-06-15-offline-ip-context-rules-design.md
+plan: docs/superpowers/plans/2026-06-15-offline-ip-context-rules.md
+verify_result: pending
+verification_report: null
+branch_status: pending
+created_at: 2026-06-15
+verified_at: null
+archived: false
+handoff_context: openspec/changes/add-offline-ip-context-rules/.comet/handoff/design-context.json
+handoff_hash: 70cddf92eefae0fa45f693b903cecc2fed1b139ba6d003044fd98d0b73eebc52
+build_command: python3 -m py_compile logcheck/ip_context.py logcheck/parsers.py logcheck/rules.py
+verify_command: python3 -m pytest -q

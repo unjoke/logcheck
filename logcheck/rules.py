@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from urllib.parse import unquote_plus
 
+from .ip_context import classify_ip_address
 from .models import DetectionConfig, Event, Finding
 
 
@@ -25,6 +26,7 @@ def detect_findings(events: list[Event], config: DetectionConfig) -> list[Findin
     findings.extend(_privilege_escalation_findings(events))
     findings.extend(_brute_force_findings(events, config))
     findings.extend(_multi_signal_findings(findings))
+    findings.extend(_public_source_cluster_findings(findings, events))
     return findings
 
 
@@ -360,3 +362,73 @@ def _multi_signal_findings(findings: list[Finding]) -> list[Finding]:
             )
         )
     return correlated
+
+
+def _source_address_context(event: Event) -> dict[str, object]:
+    metadata = event.metadata or {}
+    context = metadata.get("source_address_context")
+    if isinstance(context, dict) and context.get("address") == event.source_address:
+        return context
+    if event.source_address:
+        return classify_ip_address(event.source_address).to_dict()
+    return {
+        "address": "",
+        "is_valid": False,
+        "version": None,
+        "category": "missing",
+        "is_global": False,
+        "reason": "No source address available.",
+    }
+
+
+def _public_source_cluster_findings(findings: list[Finding], events: list[Event]) -> list[Finding]:
+    findings_by_source: dict[str, list[Finding]] = defaultdict(list)
+    source_contexts: dict[str, dict[str, object]] = {}
+
+    for event in events:
+        if not event.source_address:
+            continue
+        source_contexts.setdefault(event.source_address, _source_address_context(event))
+
+    for finding in findings:
+        if finding.source_address:
+            findings_by_source[finding.source_address].append(finding)
+
+    clustered: list[Finding] = []
+    for source, bucket in findings_by_source.items():
+        if len(bucket) < 2:
+            continue
+
+        context = source_contexts.get(source) or classify_ip_address(source).to_dict()
+        if not context.get("is_global"):
+            continue
+
+        evidence: list[str] = []
+        for finding in bucket:
+            for item in finding.evidence:
+                if item not in evidence:
+                    evidence.append(item)
+                if len(evidence) >= 5:
+                    break
+            if len(evidence) >= 5:
+                break
+
+        clustered.append(
+            Finding(
+                rule_id="behavior.public_source_cluster",
+                severity="medium",
+                explanation=(
+                    f"Globally routable source {source} is associated with multiple suspicious findings."
+                ),
+                evidence=evidence,
+                source_file=bucket[0].source_file,
+                line_number=bucket[0].line_number,
+                timestamp=bucket[0].timestamp,
+                source_address=source,
+                actor=bucket[0].actor,
+                count=len(bucket),
+                severity_reason="Public sources with repeated suspicious findings deserve review.",
+                confidence_reason=str(context.get("reason") or "Source address classified locally as global."),
+            )
+        )
+    return clustered

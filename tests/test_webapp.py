@@ -53,6 +53,20 @@ def test_samples_endpoint_lists_local_samples(tmp_path):
     assert response.get_json()["samples"] == [{"id": "auth.log", "name": "auth.log"}]
 
 
+def test_samples_endpoint_lists_visual_samples(tmp_path):
+    sample_dir = tmp_path / "samples"
+    sample_dir.mkdir()
+    for name in ["access-visual-diverse.log", "auth-visual.log", "app-visual.log"]:
+        (sample_dir / name).write_text("line\n", encoding="utf-8")
+    app = create_app(sample_dir=sample_dir, upload_dir=tmp_path / "uploads")
+    client = app.test_client()
+
+    response = client.get("/api/samples")
+    names = {sample["name"] for sample in response.get_json()["samples"]}
+
+    assert {"access-visual-diverse.log", "auth-visual.log", "app-visual.log"}.issubset(names)
+
+
 def test_dashboard_renders_local_investigation_regions(tmp_path):
     client = make_app(tmp_path)
 
@@ -86,6 +100,23 @@ def test_dashboard_renders_visual_report_region(tmp_path):
         "Severity distribution",
     ]:
         assert text in html
+
+
+def test_dashboard_includes_expanded_visual_report_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for expected in [
+        "source-chart",
+        "time-chart",
+        "severity-chart",
+        "rule-chart",
+        "source-file-chart",
+    ]:
+        assert expected in html
 
 
 def test_dashboard_renders_language_filter_pagination_and_attacker_ip_regions(tmp_path):

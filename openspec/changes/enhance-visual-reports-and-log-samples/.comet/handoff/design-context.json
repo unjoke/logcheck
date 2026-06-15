@@ -1,0 +1,15 @@
+{
+  "change": "enhance-visual-reports-and-log-samples",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "d03030ac5d48624dd6bca915e7fd70f692756b1968b2184340c049eed5f3e1b3",
+  "files": [
+    { "path": "openspec/changes/enhance-visual-reports-and-log-samples/proposal.md", "sha256": "e46e3b29e9aa4e3c30b5e7b01213b6a8c5d43155b369c8108d861e870ae50786" },
+    { "path": "openspec/changes/enhance-visual-reports-and-log-samples/design.md", "sha256": "a3a8113e0179c0cbb4b280ddcbf98c5eaae07cecf2724a319749c1a41257fa3a" },
+    { "path": "openspec/changes/enhance-visual-reports-and-log-samples/tasks.md", "sha256": "045142d41cfe89ab54c5b8737176645a4f9fb0f932666a32bad92d7247037657" },
+    { "path": "openspec/changes/enhance-visual-reports-and-log-samples/specs/log-ingestion/spec.md", "sha256": "bf3e23cd77cbe235b2bf7befd36273f49f698a2a18e61952ff5c85cfa25fd46a" },
+    { "path": "openspec/changes/enhance-visual-reports-and-log-samples/specs/web-frontend/spec.md", "sha256": "b0b6bcb9723b42f55a8fdf24df7940639647660d6d115caf06d1acd69c2d6b8b" }
+  ]
+}

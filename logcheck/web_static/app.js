@@ -33,8 +33,11 @@ const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
   severity: document.querySelector("#severity-chart"),
+  rule: document.querySelector("#rule-chart"),
+  sourceFile: document.querySelector("#source-file-chart"),
   attackerIps: document.querySelector("#attacker-ip-stats"),
 };
+const CHART_LIMIT = 6;
 
 const metrics = {
   events: document.querySelector("#metric-events"),
@@ -520,15 +523,18 @@ function renderCharts(payload) {
   const findings = payload.findings || [];
   const summary = payload.summary || {};
   const insights = payload.insights || {};
-  const sourceRows = chartSourceDistribution(findings);
-  const timeRows = chartTimeDistribution(findings, insights);
-  const severityRows = chartSeverityDistribution(summary, findings);
+  const datasets = buildChartDatasets(payload);
+  const sourceRows = datasets.sourceIps.length ? datasets.sourceIps : chartSourceDistribution(findings);
+  const timeRows = datasets.timeBuckets.length ? datasets.timeBuckets : chartTimeDistribution(findings, insights);
+  const severityRows = datasets.severities;
   const attackerRows = aggregateAttackerIps(findings);
 
-  chartCount.textContent = findings.length ? "4 charts" : "0 charts";
-  renderBarChart(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
-  renderBarChart(charts.time, timeRows, { empty: t("noTimeData") });
-  renderBarChart(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  chartCount.textContent = findings.length ? "6 charts" : "0 charts";
+  renderChartFallbackTable(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
+  renderChartFallbackTable(charts.time, timeRows, { empty: t("noTimeData") });
+  renderChartFallbackTable(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  renderChartFallbackTable(charts.rule, datasets.rules, { empty: "No rule findings to chart." });
+  renderChartFallbackTable(charts.sourceFile, datasets.sourceFiles, { empty: "No source contribution data to chart." });
   renderAttackerIpStats(charts.attackerIps, attackerRows);
 }
 
@@ -559,6 +565,64 @@ function chartTimeDistribution(findings, insights) {
     counts.set(label, (counts.get(label) || 0) + 1);
   });
   return sortedChartRows(counts, false).slice(0, 6);
+}
+
+function buildChartDatasets(payload) {
+  const findings = payload.findings || [];
+  const summary = payload.summary || {};
+  return {
+    sourceIps: buildSourceIpRows(findings),
+    timeBuckets: buildTimeBucketRows(findings),
+    severities: chartSeverityDistribution(summary, findings),
+    rules: buildRuleRows(findings),
+    sourceFiles: buildSourceFileRows(findings),
+  };
+}
+
+function buildSourceIpRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const source = finding.source_address || "unknown";
+    counts.set(source, (counts.get(source) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
+}
+
+function buildTimeBucketRows(findings) {
+  const counts = new Map();
+  let unknown = 0;
+  for (const finding of findings) {
+    if (!finding.timestamp) {
+      unknown += 1;
+      continue;
+    }
+    const timestamp = String(finding.timestamp);
+    const bucket = timestamp.length >= 13 ? `${timestamp.slice(0, 13)}:00` : timestamp;
+    counts.set(bucket, (counts.get(bucket) || 0) + 1);
+  }
+  const rows = sortedChartRows(counts, false).slice(0, CHART_LIMIT);
+  if (unknown) {
+    rows.push({ label: "Unknown time", value: unknown });
+  }
+  return rows;
+}
+
+function buildRuleRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const rule = finding.rule_id || "unknown";
+    counts.set(rule, (counts.get(rule) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
+}
+
+function buildSourceFileRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const source = finding.source_file || "unknown";
+    counts.set(source, (counts.get(source) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
 }
 
 function aggregateAttackerIps(findings) {
@@ -683,6 +747,17 @@ function renderBarChart(container, rows, options) {
     `;
     container.append(item);
   }
+}
+
+function renderChartFallbackTable(container, rows, options = {}) {
+  if (!rows.length) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(options.empty || "No chart data available.")}</p>`;
+    return;
+  }
+  const tableRows = rows
+    .map((row) => `<tr><th scope="row">${escapeHtml(row.label)}</th><td>${escapeHtml(String(row.value))}</td></tr>`)
+    .join("");
+  container.innerHTML = `<table class="chart-fallback"><tbody>${tableRows}</tbody></table>`;
 }
 
 function escapeHtml(value) {

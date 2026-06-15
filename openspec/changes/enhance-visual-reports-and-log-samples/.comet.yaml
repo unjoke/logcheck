@@ -1,0 +1,16 @@
+workflow: full
+phase: build
+build_mode: subagent-driven-development
+isolation: worktree
+verify_mode: null
+base_ref: e0c45d3280ad0fbf8904ede96545f9447d0b3530
+design_doc: docs/superpowers/specs/2026-06-15-enhance-visual-reports-and-log-samples-design.md
+plan: docs/superpowers/plans/2026-06-15-enhance-visual-reports-and-log-samples.md
+verify_result: pending
+verification_report: null
+branch_status: pending
+created_at: 2026-06-15
+verified_at: null
+archived: false
+handoff_context: openspec/changes/enhance-visual-reports-and-log-samples/.comet/handoff/design-context.json
+handoff_hash: d03030ac5d48624dd6bca915e7fd70f692756b1968b2184340c049eed5f3e1b3

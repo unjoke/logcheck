@@ -14,5 +14,5 @@ verified_at: null
 archived: false
 handoff_context: openspec/changes/enhance-visual-reports-and-log-samples/.comet/handoff/design-context.json
 handoff_hash: d03030ac5d48624dd6bca915e7fd70f692756b1968b2184340c049eed5f3e1b3
-build_command: python -m pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q
-verify_command: python -m pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q
+build_command: python3 -m pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q
+verify_command: python3 -m pytest tests/test_chart_data_adapter.py tests/test_samples.py tests/test_webapp.py tests/test_web_serialization.py tests/test_parsers.py -q

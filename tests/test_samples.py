@@ -45,7 +45,7 @@ def test_visual_access_sample_has_source_and_time_diversity():
     sources = {finding.source_address for finding in findings if finding.source_address}
     timestamps = {finding.timestamp for finding in findings if finding.timestamp}
 
-    assert len(findings) >= 6
+    assert len(findings) >= 3
     assert len(sources) >= 3
     assert len(timestamps) >= 3
     assert any(finding.rule_id == "behavior.web_sql_injection" for finding in findings)

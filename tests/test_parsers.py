@@ -45,6 +45,8 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(event.metadata["user_agent"], "python-requests/2.26.0")
         self.assertIn("and if(substr(database(),1,1)", event.metadata["decoded_request"])
         self.assertEqual(event.metadata["path"], "/index.php")
+        self.assertIsNotNone(event.timestamp)
+        self.assertEqual(event.timestamp.isoformat(), "2021-09-01T01:37:25+00:00")
 
     def test_unknown_line_is_preserved(self):
         event = parse_line("misc.log", 3, "not a known format")

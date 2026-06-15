@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 import re
 from urllib.parse import unquote_plus, urlsplit
@@ -45,6 +46,13 @@ def _extract_actor(message: str) -> str | None:
 def _extract_ip(line: str) -> str | None:
     match = IP_SEARCH_RE.search(line)
     return match.group("ip") if match else None
+
+
+def _parse_access_timestamp(value: str) -> datetime | None:
+    try:
+        return datetime.strptime(value, "%d/%b/%Y:%H:%M:%S %z")
+    except ValueError:
+        return None
 
 
 def parse_line(source_file: str, line_number: int, raw_line: str) -> Event:
@@ -108,6 +116,7 @@ def parse_line(source_file: str, line_number: int, raw_line: str) -> Event:
             source_file=source_file,
             line_number=line_number,
             raw_line=line,
+            timestamp=_parse_access_timestamp(access_match.group("access_time")),
             category="access",
             target=target,
             source_address=source_address,

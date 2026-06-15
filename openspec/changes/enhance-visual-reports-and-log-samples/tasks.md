@@ -15,7 +15,7 @@
 - [x] 3.1 Integrate the selected renderer into `logcheck/web_static/` without runtime external network fetches.
 - [x] 3.2 Render source IP, time distribution, severity, rule, and source contribution charts from the latest successful analysis result.
 - [x] 3.3 Ensure chart rendering failure leaves the report reviewable through fallback summaries.
-- [ ] 3.4 Verify the visual report on desktop and mobile local browser viewports.
+- [x] 3.4 Verify the visual report on desktop and mobile local browser viewports.
 
 ## 4. Bundled Log Samples
 
@@ -28,5 +28,5 @@
 
 - [x] 5.1 Add or update tests proving bundled samples are listed by the web API and parse into findings useful for charts.
 - [x] 5.2 Run the relevant Python test suite for parsing, sample discovery, serialization, and web frontend behavior.
-- [ ] 5.3 Run local Flask browser verification to confirm charts render offline and no active external controls are introduced.
-- [ ] 5.4 Update OpenSpec task checkboxes as implementation tasks complete.
+- [x] 5.3 Run local Flask browser verification to confirm charts render offline and no active external controls are introduced.
+- [x] 5.4 Update OpenSpec task checkboxes as implementation tasks complete.

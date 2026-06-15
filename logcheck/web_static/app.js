@@ -33,6 +33,8 @@ const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
   severity: document.querySelector("#severity-chart"),
+  rule: document.querySelector("#rule-chart"),
+  sourceFile: document.querySelector("#source-file-chart"),
   attackerIps: document.querySelector("#attacker-ip-stats"),
 };
 const CHART_LIMIT = 6;
@@ -527,10 +529,12 @@ function renderCharts(payload) {
   const severityRows = datasets.severities;
   const attackerRows = aggregateAttackerIps(findings);
 
-  chartCount.textContent = findings.length ? "4 charts" : "0 charts";
+  chartCount.textContent = findings.length ? "6 charts" : "0 charts";
   renderChartFallbackTable(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
   renderChartFallbackTable(charts.time, timeRows, { empty: t("noTimeData") });
   renderChartFallbackTable(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  renderChartFallbackTable(charts.rule, datasets.rules, { empty: "No rule findings to chart." });
+  renderChartFallbackTable(charts.sourceFile, datasets.sourceFiles, { empty: "No source contribution data to chart." });
   renderAttackerIpStats(charts.attackerIps, attackerRows);
 }
 

@@ -88,6 +88,23 @@ def test_dashboard_renders_visual_report_region(tmp_path):
         assert text in html
 
 
+def test_dashboard_includes_expanded_visual_report_regions(tmp_path):
+    client = make_app(tmp_path)
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    for expected in [
+        "source-chart",
+        "time-chart",
+        "severity-chart",
+        "rule-chart",
+        "source-file-chart",
+    ]:
+        assert expected in html
+
+
 def test_dashboard_renders_language_filter_pagination_and_attacker_ip_regions(tmp_path):
     client = make_app(tmp_path)
 

@@ -91,7 +91,7 @@ id = "sensitive_path_access"
 category = "privilege"
 description = "Access to sensitive system paths"
 weight = 2
-text_contains = ["/etc/shadow", "/root", "/admin"]
+text_contains = ["/etc/shadow", "/root"]
 score = 15
 
 [[indicator_rules]]

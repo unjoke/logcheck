@@ -1,0 +1,226 @@
+[severity_thresholds]
+low = 0
+medium = 20
+high = 50
+critical = 80
+
+# ── Auth Indicators ──────────────────────────────────────
+
+[[indicator_rules]]
+id = "failed_login"
+category = "auth"
+description = "Failed password or login attempt"
+weight = 2
+text_contains = ["failed password", "failed login", "authentication failure"]
+score = 10
+
+[[indicator_rules]]
+id = "invalid_user"
+category = "auth"
+description = "Login attempt with non-existent username"
+weight = 2
+text_contains = ["invalid user"]
+score = 10
+
+[[indicator_rules]]
+id = "sudo_failure"
+category = "auth"
+description = "Failed sudo authentication"
+weight = 2
+text_contains = ["sudo:auth", "sudo failure"]
+score = 15
+
+[[indicator_rules]]
+id = "root_auth_failure"
+category = "auth"
+description = "Authentication failure for root user"
+weight = 2
+text_contains = ["authentication failure; user=root"]
+score = 20
+
+# ── Access Control Indicators ────────────────────────────
+
+[[indicator_rules]]
+id = "unauthorized_access"
+category = "access_control"
+description = "Unauthorized access attempt logged"
+weight = 2
+text_contains = ["unauthorized access"]
+score = 15
+
+[[indicator_rules]]
+id = "permission_denied"
+category = "access_control"
+description = "Permission denied error"
+weight = 1
+text_contains = ["permission denied"]
+score = 5
+
+# ── Suspicious Commands ───────────────────────────────────
+
+[[indicator_rules]]
+id = "suspicious_download"
+category = "command"
+description = "Suspicious file download via wget or curl"
+weight = 2
+text_contains = ["wget http", "curl http"]
+score = 15
+
+[[indicator_rules]]
+id = "reverse_shell"
+category = "command"
+description = "Potential reverse shell indicators"
+weight = 3
+text_contains = ["nc -e", "bash -i"]
+score = 25
+
+# ── Scanner/Probe Indicators ──────────────────────────────
+
+[[indicator_rules]]
+id = "scanner_probe"
+category = "recon"
+description = "Automated scanner or vulnerability probe"
+weight = 1
+text_contains = ["attack_case=scanner", "nikto"]
+score = 5
+
+# ── Privilege Escalation Indicators ───────────────────────
+
+[[indicator_rules]]
+id = "sensitive_path_access"
+category = "privilege"
+description = "Access to sensitive system paths"
+weight = 2
+text_contains = ["/etc/shadow", "/root"]
+status_not = [403, 404]
+score = 15
+
+[[indicator_rules]]
+id = "su_authentication"
+category = "privilege"
+description = "Switch user authentication attempt"
+weight = 2
+text_contains = ["su:auth"]
+score = 15
+
+# ── SQL Injection Indicators ──────────────────────────────
+
+[[indicator_rules]]
+id = "sqli_substr"
+category = "web_attack"
+description = "substr() call — common in blind SQL injection"
+weight = 2
+event_category = "access"
+text_contains = ["substr("]
+score = 15
+
+[[indicator_rules]]
+id = "sqli_information_schema"
+category = "web_attack"
+description = "information_schema access — schema enumeration"
+weight = 2
+event_category = "access"
+text_contains = ["information_schema"]
+score = 10
+
+[[indicator_rules]]
+id = "sqli_union_select"
+category = "web_attack"
+description = "UNION SELECT — classic SQL injection"
+weight = 3
+event_category = "access"
+text_contains = ["union select"]
+score = 20
+
+[[indicator_rules]]
+id = "sqli_and_if"
+category = "web_attack"
+description = "AND IF(...) — boolean-blind conditional"
+weight = 3
+event_category = "access"
+text_contains = [" and if("]
+score = 20
+
+[[indicator_rules]]
+id = "sqli_database_call"
+category = "web_attack"
+description = "database() call — DB name extraction"
+weight = 2
+event_category = "access"
+text_contains = ["database()"]
+score = 10
+
+[[indicator_rules]]
+id = "sqli_select_table_name"
+category = "web_attack"
+description = "SELECT table_name — table enumeration"
+weight = 2
+event_category = "access"
+text_contains = ["select table_name"]
+score = 10
+
+[[indicator_rules]]
+id = "sqli_select_flag"
+category = "web_attack"
+description = "SELECT flag — CTF flag extraction attempt"
+weight = 2
+event_category = "access"
+text_contains = ["select flag"]
+score = 10
+
+# ── Pattern Rules ─────────────────────────────────────────
+
+[[pattern_rules]]
+id = "boolean_blind_enumeration"
+category = "web_attack"
+description = "Sustained boolean-blind SQL injection with character-by-character enumeration"
+require_indicators = ["sqli_substr", "sqli_and_if"]
+min_events = 5
+multiplier = 1.8
+score = 40
+max_final_score = 85
+
+[[pattern_rules]]
+id = "schema_discovery"
+category = "web_attack"
+description = "Database schema enumeration via information_schema"
+require_indicators = ["sqli_information_schema", "sqli_select_table_name"]
+min_events = 3
+multiplier = 1.5
+score = 30
+max_final_score = 70
+
+[[pattern_rules]]
+id = "data_extraction"
+category = "web_attack"
+description = "Direct data/flag extraction attempts"
+require_indicators = ["sqli_select_flag", "sqli_database_call"]
+min_events = 2
+multiplier = 1.5
+score = 30
+max_final_score = 75
+
+[[pattern_rules]]
+id = "failed_auth_burst"
+category = "auth"
+description = "Sustained brute-force authentication attempts"
+require_indicators = ["failed_login"]
+min_events = 5
+multiplier = 1.5
+score = 30
+max_final_score = 70
+
+# ── Correlation Rules ─────────────────────────────────────
+
+[[correlation_rules]]
+id = "multi_category_source"
+description = "Source triggers multiple distinct detection categories"
+min_distinct_categories = 2
+score = 20
+
+[[correlation_rules]]
+id = "public_source_cluster"
+description = "Globally routable source with multiple findings"
+require_source_global = true
+min_findings = 2
+score = 15

@@ -8,6 +8,7 @@ const state = {
     severity: "",
     rule: "",
     source: "",
+    minScore: 0,
   },
   findingPage: 1,
   findingsPerPage: 10,
@@ -28,6 +29,7 @@ const findingSearch = document.querySelector("#finding-search");
 const severityFilter = document.querySelector("#severity-filter");
 const ruleFilter = document.querySelector("#rule-filter");
 const sourceFilter = document.querySelector("#source-filter");
+const minScoreFilter = document.querySelector("#min-score-filter");
 const findingPagination = document.querySelector("#finding-pagination");
 const charts = {
   source: document.querySelector("#source-chart"),
@@ -127,11 +129,18 @@ for (const [element, key] of [
   [severityFilter, "severity"],
   [ruleFilter, "rule"],
   [sourceFilter, "source"],
+  [minScoreFilter, "minScore"],
 ]) {
   element.addEventListener("change", () => {
-    state.filters[key] = element.value;
+    state.filters[key] = element.type === "range" ? Number(element.value) : element.value;
     state.findingPage = 1;
     renderFindings(state.findings);
+  });
+}
+if (minScoreFilter) {
+  minScoreFilter.addEventListener("input", () => {
+    const label = document.querySelector("#min-score-value");
+    if (label) label.textContent = minScoreFilter.value;
   });
 }
 
@@ -248,14 +257,25 @@ function renderFindings(findings) {
     button.type = "button";
     button.className = `finding-card${pageIndex === 0 ? " active" : ""}`;
     button.setAttribute("role", "listitem");
+    const score = finding.score || 0;
+    const confidence = finding.confidence || 0;
     button.innerHTML = `
       <div class="finding-title">
         <span>${escapeHtml(finding.rule_id || "Finding")}</span>
-        <span class="severity ${escapeHtml(String(finding.severity || "").toLowerCase())}">
-          ${escapeHtml(finding.severity || "info")}
-        </span>
+        <div class="finding-badges">
+          <span class="score-badge" title="Score: ${score}" aria-label="Score ${score}">S:${score}</span>
+          <span class="severity ${escapeHtml(String(finding.severity || "").toLowerCase())}">
+            ${escapeHtml(finding.severity || "info")}
+          </span>
+        </div>
       </div>
       <div class="finding-meta">${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(String(finding.line_number || "line n/a"))}</div>
+      <div class="confidence-track" title="Confidence: ${confidence}%">
+        <span class="confidence-label">Confidence: ${confidence}%</span>
+        <span class="confidence-bar-bg">
+          <span class="confidence-bar-fill" style="width: ${confidence}%"></span>
+        </span>
+      </div>
     `;
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
@@ -279,6 +299,9 @@ function applyFindingFilters(findings) {
       return false;
     }
     if (state.filters.source && finding.source_address !== state.filters.source) {
+      return false;
+    }
+    if (state.filters.minScore > 0 && (finding.score || 0) < state.filters.minScore) {
       return false;
     }
     if (!keyword) {
@@ -383,7 +406,7 @@ function renderSelectedAlert(finding, index) {
       <p class="detail-eyebrow">Selected alert</p>
       <h3>${escapeHtml(finding.rule_id || `Finding ${index + 1}`)}</h3>
       <div class="detail-meta">
-        ${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(finding.severity || "info")}
+        ${escapeHtml(finding.explanation || "Review evidence")} | ${escapeHtml(finding.source_file || "Local source")} | ${escapeHtml(finding.severity || "info")} | Score: ${finding.score || 0} | Confidence: ${finding.confidence || 0}%
       </div>
     </section>
     <section class="alert-detail-section">

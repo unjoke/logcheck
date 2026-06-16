@@ -12,7 +12,7 @@ from .models import AnalysisResult
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Analyze local logs for intrusion indicators.")
     parser.add_argument("logs", nargs="+", help="Local log files to analyze")
-    parser.add_argument("--config", type=Path, help="Optional TOML rule configuration")
+    parser.add_argument("--rules", type=Path, default=None, help="Path to a TOML/JSON/YAML rules file")
     parser.add_argument("--out-dir", type=Path, default=Path("outputs"), help="Directory for exported reports")
     parser.add_argument(
         "--format",
@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     paths = [Path(log) for log in args.logs]
     try:
-        result = analyze_logs(paths, args.config)
+        result = analyze_logs(paths, rules_path=args.rules)
     except FileNotFoundError as exc:
         print(f"error: file not found: {exc}", file=sys.stderr)
         return 2

@@ -17,6 +17,8 @@ class EntityProfile:
     severity_counts: dict[str, int]
     related_rules: list[str]
     evidence: list[str] = field(default_factory=list)
+    avg_score: float = 0.0
+    avg_confidence: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,10 @@ def _entity_profiles(findings: list[Finding]) -> list[EntityProfile]:
         evidence: list[str] = []
         for finding in entity_findings:
             evidence.extend(finding.evidence)
+        scores = [f.score for f in entity_findings]
+        confidences = [f.confidence for f in entity_findings]
+        avg_score = sum(scores) / len(scores) if scores else 0.0
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
         profiles.append(
             EntityProfile(
                 kind=kind,
@@ -93,6 +99,8 @@ def _entity_profiles(findings: list[Finding]) -> list[EntityProfile]:
                 severity_counts=dict(severity_counts),
                 related_rules=sorted({finding.rule_id for finding in entity_findings}),
                 evidence=evidence[:5],
+                avg_score=round(avg_score, 1),
+                avg_confidence=round(avg_confidence, 1),
             )
         )
 
@@ -132,10 +140,12 @@ def _timeline(findings: list[Finding]) -> list[TimelineHighlight]:
 
 def _suggestions(risk_level: str, profiles: list[EntityProfile]) -> list[RemediationSuggestion]:
     evidence = profiles[0].evidence[:3] if profiles else []
+    top_score = profiles[0].avg_score if profiles else 0.0
+    score_hint = f" (top entity avg score: {top_score})" if top_score > 0 else ""
     return [
         RemediationSuggestion(
             title="Review highlighted evidence",
-            detail=f"Manually compare the {risk_level} findings with nearby local log entries and documented maintenance activity.",
+            detail=f"Manually compare the {risk_level} findings with nearby local log entries and documented maintenance activity.{score_hint}",
             evidence=evidence,
         ),
         RemediationSuggestion(

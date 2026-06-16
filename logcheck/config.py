@@ -1,148 +1,210 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import tomllib
+from pathlib import Path
 
-from .models import DetectionConfig
+from .models import (
+    CorrelationRule,
+    IndicatorRule,
+    PatternRule,
+    RuleConfig,
+)
 
 
-SUPPORTED_BEHAVIOR_FIELDS = {
-    "enabled",
-    "template_burst_threshold",
-    "sequence_window_minutes",
-}
+DEFAULT_SEVERITY_THRESHOLDS = {"low": 0, "medium": 20, "high": 50, "critical": 80}
 
 
-def default_config() -> DetectionConfig:
-    return DetectionConfig(
-        keywords={
-            "failed_login": ["failed password", "failed login", "authentication failure"],
-            "invalid_user": ["invalid user"],
-            "unauthorized_access": ["unauthorized access"],
-            "permission_denied": ["permission denied"],
-            "sudo_failure": ["sudo:auth", "sudo failure"],
-            "suspicious_command": ["wget http", "curl http", "nc -e", "bash -i"],
-        },
-        brute_force_threshold=5,
-        brute_force_window_minutes=10,
+def _validate_score_range(value: int, field: str, rule_id: str) -> None:
+    if not (0 <= value <= 100):
+        raise ValueError(
+            f"Rule '{rule_id}': {field} must be 0-100, got {value}"
+        )
+
+
+def _parse_int_list(value: object) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    result: list[int] = []
+    for item in value:
+        if isinstance(item, int) and not isinstance(item, bool):
+            result.append(item)
+        elif isinstance(item, str) and item.lstrip("-").isdigit():
+            result.append(int(item))
+    return result
+
+
+def _validate_indicator_rule(data: dict) -> IndicatorRule:
+    rule_id = data.get("id")
+    if not isinstance(rule_id, str) or not rule_id:
+        raise ValueError("indicator_rules: 'id' is required and must be a string")
+    category = data.get("category", "general")
+    description = data.get("description", "")
+    weight = data.get("weight", 1)
+    score = data.get("score", 0)
+    _validate_score_range(score, "score", rule_id)
+    return IndicatorRule(
+        id=rule_id,
+        category=str(category),
+        description=str(description),
+        weight=int(weight),
+        score=int(score),
+        event_category=data.get("event_category"),
+        text_contains=data.get("text_contains", []),
+        regex=data.get("regex"),
+        status_codes=_parse_int_list(data.get("status_codes", [])),
+        status_not=_parse_int_list(data.get("status_not", [])),
+        enabled=data.get("enabled", True),
     )
 
 
-def load_config(path: Path | None) -> DetectionConfig:
-    if path is None:
-        return default_config()
+def _validate_pattern_rule(data: dict) -> PatternRule:
+    rule_id = data.get("id")
+    if not isinstance(rule_id, str) or not rule_id:
+        raise ValueError("pattern_rules: 'id' is required and must be a string")
+    score = data.get("score", 0)
+    _validate_score_range(score, "score", rule_id)
+    max_score = data.get("max_final_score", 100)
+    _validate_score_range(max_score, "max_final_score", rule_id)
+    return PatternRule(
+        id=rule_id,
+        category=str(data.get("category", "general")),
+        description=str(data.get("description", "")),
+        require_indicators=data.get("require_indicators", []),
+        min_events=int(data.get("min_events", 2)),
+        multiplier=float(data.get("multiplier", 1.0)),
+        score=int(score),
+        max_final_score=int(max_score),
+        enabled=data.get("enabled", True),
+    )
 
+
+def _validate_correlation_rule(data: dict) -> CorrelationRule:
+    rule_id = data.get("id")
+    if not isinstance(rule_id, str) or not rule_id:
+        raise ValueError("correlation_rules: 'id' is required and must be a string")
+    score = data.get("score", 0)
+    _validate_score_range(score, "score", rule_id)
+    return CorrelationRule(
+        id=rule_id,
+        description=str(data.get("description", "")),
+        min_distinct_categories=int(data.get("min_distinct_categories", 2)),
+        require_source_global=data.get("require_source_global", False),
+        min_findings=int(data.get("min_findings", 2)),
+        score=int(score),
+        enabled=data.get("enabled", True),
+    )
+
+
+def _merge_configs(base: RuleConfig, overlay: RuleConfig) -> RuleConfig:
+    """Merge overlay into base. Same-ID rules in overlay replace base."""
+    overlay_indicator_ids = {r.id for r in overlay.indicator_rules}
+    overlay_pattern_ids = {r.id for r in overlay.pattern_rules}
+    overlay_corr_ids = {r.id for r in overlay.correlation_rules}
+
+    merged_indicators = [
+        r for r in base.indicator_rules
+        if r.id not in overlay_indicator_ids
+    ] + list(overlay.indicator_rules)
+
+    merged_patterns = [
+        r for r in base.pattern_rules
+        if r.id not in overlay_pattern_ids
+    ] + list(overlay.pattern_rules)
+
+    merged_corrs = [
+        r for r in base.correlation_rules
+        if r.id not in overlay_corr_ids
+    ] + list(overlay.correlation_rules)
+
+    merged_thresholds = {**base.severity_thresholds, **overlay.severity_thresholds}
+
+    return RuleConfig(
+        indicator_rules=merged_indicators,
+        pattern_rules=merged_patterns,
+        correlation_rules=merged_corrs,
+        severity_thresholds=merged_thresholds,
+    )
+
+
+def load_rules(path: Path | None = None) -> RuleConfig:
+    """Load rules from a TOML/JSON/YAML file, or return default rules."""
+    config = _default_rules()
+    if path is None:
+        return config
+    overlay = _parse_rules_file(path)
+    return _merge_configs(config, overlay)
+
+
+def _default_rules() -> RuleConfig:
+    """Load built-in default_rules.toml from package directory."""
+    rules_path = Path(__file__).parent / "default_rules.toml"
+    if rules_path.exists():
+        return _parse_rules_file(rules_path)
+    return RuleConfig()
+
+
+def _parse_rules_file(path: Path) -> RuleConfig:
     path = Path(path)
     text = path.read_text(encoding="utf-8")
-    if path.suffix == ".json":
-        data = json.loads(text)
-    elif path.suffix == ".toml":
+    suffix = path.suffix.lower()
+
+    if suffix == ".toml":
         data = tomllib.loads(text)
-    elif path.suffix in {".yaml", ".yml"}:
-        data = _load_yaml(text)
+    elif suffix == ".json":
+        data = json.loads(text)
+    elif suffix in {".yaml", ".yml"}:
+        try:
+            import yaml
+            data = yaml.safe_load(text) or {}
+        except ImportError:
+            raise ValueError("YAML requires PyYAML; use JSON or TOML instead")
     else:
-        raise ValueError(f"Unsupported config file type: {path.suffix}")
+        raise ValueError(f"Unsupported rules file type: {suffix}")
 
     if not isinstance(data, dict):
-        raise ValueError("Rule config must be an object")
+        raise ValueError("Rules file must contain a top-level object")
 
-    base = default_config()
-    keywords = data.get("keywords", base.keywords)
-    _validate_keywords(keywords)
-    brute_force = data.get("brute_force", {})
-    _validate_brute_force(brute_force)
-    behavior = data.get("behavior", {})
-    _validate_behavior(behavior)
-    return DetectionConfig(
-        keywords=keywords,
-        brute_force_threshold=_parse_int(
-            brute_force.get("threshold", base.brute_force_threshold), "brute_force.threshold"
-        ),
-        brute_force_window_minutes=_parse_int(
-            brute_force.get("window_minutes", base.brute_force_window_minutes),
-            "brute_force.window_minutes",
-        ),
-        behavior_enabled=_parse_bool(
-            behavior.get("enabled", base.behavior_enabled), "behavior.enabled"
-        ),
-        template_burst_threshold=_parse_positive_int(
-            behavior.get("template_burst_threshold", base.template_burst_threshold),
-            "behavior.template_burst_threshold",
-        ),
-        sequence_window_minutes=_parse_positive_int(
-            behavior.get("sequence_window_minutes", base.sequence_window_minutes),
-            "behavior.sequence_window_minutes",
-        ),
+    thresholds = data.get("severity_thresholds", {})
+    if isinstance(thresholds, dict):
+        merged_thresholds = {
+            **DEFAULT_SEVERITY_THRESHOLDS,
+            **{k: int(v) for k, v in thresholds.items()},
+        }
+    else:
+        merged_thresholds = dict(DEFAULT_SEVERITY_THRESHOLDS)
+
+    indicator_data = data.get("indicator_rules", [])
+    pattern_data = data.get("pattern_rules", [])
+    correlation_data = data.get("correlation_rules", [])
+
+    if not isinstance(indicator_data, list):
+        raise ValueError("indicator_rules must be a list")
+    if not isinstance(pattern_data, list):
+        raise ValueError("pattern_rules must be a list")
+    if not isinstance(correlation_data, list):
+        raise ValueError("correlation_rules must be a list")
+
+    indicator_rules = [_validate_indicator_rule(r) for r in indicator_data]
+    pattern_rules = [_validate_pattern_rule(r) for r in pattern_data]
+    correlation_rules = [_validate_correlation_rule(r) for r in correlation_data]
+
+    # Check for duplicate IDs
+    all_ids = [r.id for r in indicator_rules + pattern_rules + correlation_rules]
+    if len(all_ids) != len(set(all_ids)):
+        seen = set()
+        for rid in all_ids:
+            if rid in seen:
+                raise ValueError(f"Duplicate rule ID: {rid}")
+            seen.add(rid)
+
+    enabled_indicators = [r for r in indicator_rules if r.enabled]
+    enabled_patterns = [r for r in pattern_rules if r.enabled]
+    enabled_corrs = [r for r in correlation_rules if r.enabled]
+
+    return RuleConfig(
+        indicator_rules=enabled_indicators,
+        pattern_rules=enabled_patterns,
+        correlation_rules=enabled_corrs,
+        severity_thresholds=merged_thresholds,
     )
-
-
-def _validate_keywords(keywords: object) -> None:
-    if not isinstance(keywords, dict):
-        raise ValueError("keywords must be an object")
-
-    for rule_id, terms in keywords.items():
-        if not isinstance(rule_id, str):
-            raise ValueError("keyword rule IDs must be strings")
-        if not isinstance(terms, list) or not all(isinstance(term, str) for term in terms):
-            raise ValueError("keyword rules must be lists of strings")
-
-
-def _load_yaml(text: str) -> object:
-    try:
-        import yaml
-    except ImportError as exc:
-        raise ValueError("YAML requires optional parser; JSON is supported") from exc
-
-    try:
-        data = yaml.safe_load(text)
-    except yaml.YAMLError as exc:
-        raise ValueError("YAML rule config could not be parsed") from exc
-    return {} if data is None else data
-
-
-def _validate_brute_force(brute_force: object) -> None:
-    if not isinstance(brute_force, dict):
-        raise ValueError("brute_force must be an object")
-
-
-def _validate_behavior(behavior: object) -> None:
-    if not isinstance(behavior, dict):
-        raise ValueError("behavior must be an object")
-    unsupported = set(behavior) - SUPPORTED_BEHAVIOR_FIELDS
-    if unsupported:
-        raise ValueError(f"Unsupported behavior config field: {sorted(unsupported)[0]}")
-
-
-def _parse_int(value: object, field_name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"{field_name} must be an integer")
-    return value
-
-
-def _parse_positive_int(value: object, field_name: str) -> int:
-    parsed = _parse_int(value, field_name)
-    if parsed <= 0:
-        raise ValueError(f"{field_name} must be a positive integer")
-    return parsed
-
-
-def _parse_bool(value: object, field_name: str) -> bool:
-    if not isinstance(value, bool):
-        raise ValueError(f"{field_name} must be a boolean")
-    return value
-
-
-def config_to_dict(config: DetectionConfig) -> dict[str, object]:
-    return {
-        "keywords": config.keywords,
-        "brute_force": {
-            "threshold": config.brute_force_threshold,
-            "window_minutes": config.brute_force_window_minutes,
-        },
-        "behavior": {
-            "enabled": config.behavior_enabled,
-            "template_burst_threshold": config.template_burst_threshold,
-            "sequence_window_minutes": config.sequence_window_minutes,
-        },
-    }

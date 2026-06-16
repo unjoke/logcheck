@@ -1,0 +1,16 @@
+{
+  "change": "refactor-rules-scoring-model",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "1deb9cc0552d5cad4a0bede6dee545369d5f81930a2d87940a3664659aa0c424",
+  "files": [
+    { "path": "openspec/changes/refactor-rules-scoring-model/proposal.md", "sha256": "04edd768e0ecd1a7be16ce6a3f4225a05e629ed7c80265059d3615c3c98d8885" },
+    { "path": "openspec/changes/refactor-rules-scoring-model/design.md", "sha256": "c09e4553d31cfd44de1ecff2e7f3a81b54b662e42cb83b9e989aebec86a78a6b" },
+    { "path": "openspec/changes/refactor-rules-scoring-model/tasks.md", "sha256": "8efe851aa3b8242b1bbc4b9c1f28e60869c336281201f81a75a2749f5abb4f56" },
+    { "path": "openspec/changes/refactor-rules-scoring-model/specs/intrusion-detection-rules/spec.md", "sha256": "f8df85ad25d68c7a7faf738ca23996b796eeedcc7571737cfb2478136680707a" },
+    { "path": "openspec/changes/refactor-rules-scoring-model/specs/rule-config-format/spec.md", "sha256": "a61bcd20fa41ebc108b49cc0cee5aced3b4028de0c7dd2d8d4602b00d7abd48c" },
+    { "path": "openspec/changes/refactor-rules-scoring-model/specs/scoring-engine/spec.md", "sha256": "b97ea1a223fe366b03fe85b8469b1a3d641e60a82fa129bf0b6a02914772b0fb" }
+  ]
+}

@@ -4,11 +4,11 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import load_config
+from .config import load_rules
 from .insights import generate_insights
 from .models import AnalysisResult
 from .parsers import parse_files
-from .rules import detect_findings
+from .rules import compile_findings
 
 
 @dataclass(frozen=True)
@@ -19,10 +19,13 @@ class AnalysisSummary:
     top_suspicious_sources: list[tuple[str, int]]
 
 
-def analyze_logs(paths: list[Path], config_path: Path | None = None) -> AnalysisResult:
-    config = load_config(config_path)
+def analyze_logs(
+    paths: list[Path],
+    rules_path: Path | None = None,
+) -> AnalysisResult:
+    rules_config = load_rules(rules_path)
     events = parse_files(paths)
-    result = AnalysisResult(events=events, findings=detect_findings(events, config))
+    result = AnalysisResult(events=events, findings=compile_findings(events, rules_config))
     result.insights = generate_insights(result)
     return result
 

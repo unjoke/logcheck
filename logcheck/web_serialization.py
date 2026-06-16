@@ -37,15 +37,20 @@ def serialize_result(result: AnalysisResult) -> dict[str, Any]:
         {event.source_file for event in result.events if event.source_file}
         or {finding.source_file for finding in result.findings if finding.source_file}
     )
+    findings = result.findings
+    avg_score = round(sum(f.score for f in findings) / max(len(findings), 1), 1)
+    avg_confidence = round(sum(f.confidence for f in findings) / max(len(findings), 1), 1)
     payload: dict[str, Any] = {
         "summary": {
             "total_events": len(result.events),
-            "total_findings": len(result.findings),
+            "total_findings": len(findings),
             "findings_by_severity": dict(severities),
             "analyzed_sources": sources,
+            "avg_score": avg_score,
+            "avg_confidence": avg_confidence,
         },
         "diagnostics": list(result.diagnostics),
-        "findings": [finding.to_dict() for finding in result.findings],
+        "findings": [finding.to_dict() for finding in findings],
         "events": [
             {
                 "source_file": event.source_file,

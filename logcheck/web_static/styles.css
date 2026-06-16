@@ -425,6 +425,53 @@ select {
   font-weight: 800;
 }
 
+.finding-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.score-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #e2eaf2;
+  color: #1a4b7a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.confidence-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.confidence-label {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.confidence-bar-bg {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-soft);
+}
+
+.confidence-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  min-width: 2px;
+}
+
 .severity {
   flex: 0 0 auto;
   border-radius: 999px;

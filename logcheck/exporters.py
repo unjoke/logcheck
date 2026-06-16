@@ -55,6 +55,9 @@ def export_csv(result: AnalysisResult, path: Path) -> None:
     fields = [
         "rule_id",
         "severity",
+        "score",
+        "confidence",
+        "rule_tier",
         "source_file",
         "line_number",
         "source_address",
@@ -124,7 +127,7 @@ def export_markdown(result: AnalysisResult, path: Path) -> None:
     for finding in result.findings:
         lines.extend(
             [
-                f"### {finding.rule_id} ({finding.severity})",
+                f"### {finding.rule_id} ({finding.severity}, score={finding.score}, confidence={finding.confidence}%)",
                 "",
                 f"- Source: {finding.source_file}:{finding.line_number}",
                 f"- Address: {finding.source_address or 'unknown'}",

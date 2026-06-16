@@ -92,6 +92,7 @@ category = "privilege"
 description = "Access to sensitive system paths"
 weight = 2
 text_contains = ["/etc/shadow", "/root"]
+status_not = [403, 404]
 score = 15
 
 [[indicator_rules]]

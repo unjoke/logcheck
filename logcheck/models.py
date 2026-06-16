@@ -124,6 +124,8 @@ class IndicatorRule:
     event_category: str | None = None
     text_contains: list[str] = field(default_factory=list)
     regex: str | None = None
+    status_codes: list[int] = field(default_factory=list)
+    status_not: list[int] = field(default_factory=list)
     enabled: bool = True
 
 

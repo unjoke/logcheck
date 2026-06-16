@@ -102,6 +102,16 @@ class IndicatorScanner:
         for rule in self._rules:
             if rule.event_category and event.category != rule.event_category:
                 continue
+
+            # Status code filtering
+            if rule.status_codes or rule.status_not:
+                status_code = event.metadata.get("status_code") if event.metadata else None
+                if isinstance(status_code, int):
+                    if rule.status_not and status_code in rule.status_not:
+                        continue
+                    if rule.status_codes and status_code not in rule.status_codes:
+                        continue
+
             matched_keyword = None
 
             if rule.id in self._compiled_regex:

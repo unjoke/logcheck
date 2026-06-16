@@ -22,6 +22,18 @@ def _validate_score_range(value: int, field: str, rule_id: str) -> None:
         )
 
 
+def _parse_int_list(value: object) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    result: list[int] = []
+    for item in value:
+        if isinstance(item, int) and not isinstance(item, bool):
+            result.append(item)
+        elif isinstance(item, str) and item.lstrip("-").isdigit():
+            result.append(int(item))
+    return result
+
+
 def _validate_indicator_rule(data: dict) -> IndicatorRule:
     rule_id = data.get("id")
     if not isinstance(rule_id, str) or not rule_id:
@@ -40,6 +52,8 @@ def _validate_indicator_rule(data: dict) -> IndicatorRule:
         event_category=data.get("event_category"),
         text_contains=data.get("text_contains", []),
         regex=data.get("regex"),
+        status_codes=_parse_int_list(data.get("status_codes", [])),
+        status_not=_parse_int_list(data.get("status_not", [])),
         enabled=data.get("enabled", True),
     )
 

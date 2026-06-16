@@ -1,0 +1,14 @@
+{
+  "change": "add-offline-ip-context-rules",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "70cddf92eefae0fa45f693b903cecc2fed1b139ba6d003044fd98d0b73eebc52",
+  "files": [
+    { "path": "openspec/changes/add-offline-ip-context-rules/proposal.md", "sha256": "42234b38523738ffad14b47961dc363c5553814fdb81ec7f07ccdefd7b527e22" },
+    { "path": "openspec/changes/add-offline-ip-context-rules/design.md", "sha256": "49ebcefa5a7be141534ce4b222eeb9fbaad6974345d887bf5256f05d027393c6" },
+    { "path": "openspec/changes/add-offline-ip-context-rules/tasks.md", "sha256": "8fc40907c28a4c52664c13d14dc01e6e9a92a1cd7a5c4bbd490cf1f03d9a9f47" },
+    { "path": "openspec/changes/add-offline-ip-context-rules/specs/intrusion-detection-rules/spec.md", "sha256": "280e129370cd8b1253de0be209b8aee2ccb6f387fc1c23f8c5a100b497fcff36" }
+  ]
+}

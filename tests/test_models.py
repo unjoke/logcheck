@@ -9,6 +9,11 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(event.category, "unknown")
         self.assertEqual(event.message, "raw")
 
+    def test_event_metadata_defaults_to_empty_dict(self):
+        event = Event(source_file="access.log", line_number=1, raw_line="raw")
+
+        self.assertEqual(event.metadata, {})
+
     def test_finding_exposes_exportable_dict(self):
         finding = Finding(
             rule_id="keyword.failed_login",

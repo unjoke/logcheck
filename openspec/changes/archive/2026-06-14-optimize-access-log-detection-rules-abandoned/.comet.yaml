@@ -1,0 +1,19 @@
+workflow: full
+phase: build
+build_mode: subagent-driven-development
+isolation: branch
+build_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q"
+verify_command: "/mnt/d/Envirnment/Python/python3.12.3/python.exe -m pytest tests -q"
+verify_mode: full
+base_ref: 92b4b1762c6ac1830bd1bee127673d69fed94028
+design_doc: docs/superpowers/specs/2026-06-14-optimize-access-log-detection-rules-design.md
+plan: docs/superpowers/plans/2026-06-14-optimize-access-log-detection-rules.md
+verify_result: fail
+verification_report: null
+branch_status: pending
+created_at: 2026-06-14
+verified_at: null
+archived: true
+archive_reason: abandoned-before-verify-pass
+handoff_context: openspec/changes/archive/2026-06-14-optimize-access-log-detection-rules-abandoned/.comet/handoff/design-context.json
+handoff_hash: 864d01d0fc051beb97c67d9bed1521405ff9488260a82e57b468615ac913e4db

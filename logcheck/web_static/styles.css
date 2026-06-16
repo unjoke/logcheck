@@ -275,6 +275,34 @@ select {
   text-align: right;
 }
 
+.chart-fallback {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.chart-fallback th,
+.chart-fallback td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.chart-fallback th {
+  max-width: 160px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-weight: 700;
+  text-align: left;
+}
+
+.chart-fallback td {
+  color: var(--ink);
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .finding-card {
   display: grid;
   gap: 6px;

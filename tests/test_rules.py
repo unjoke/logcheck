@@ -1,12 +1,12 @@
 import importlib.util
 import json
 import unittest
-from datetime import datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from logcheck.config import config_to_dict, default_config, load_config
 from logcheck.models import DetectionConfig, Event
+from logcheck.parsers import parse_files
 from logcheck.rules import detect_findings
 
 
@@ -104,6 +104,154 @@ class RuleTests(unittest.TestCase):
         self.assertIsNotNone(suspicious[0].severity_reason)
         self.assertIsNotNone(suspicious[0].confidence_reason)
 
+    def test_url_encoded_sql_injection_access_log_creates_behavior_finding(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=(
+                    '172.17.0.1 - - [01/Sep/2021:01:37:25 +0000] '
+                    '"GET /index.php?id=1%20and%20if(substr(database(),1,1)%20=%20'
+                    "'s',1,(select%20table_name%20from%20information_schema.tables)) HTTP/1.1\" "
+                    '200 472 "-" "python-requests/2.26.0"'
+                ),
+                category="access",
+                source_address="172.17.0.1",
+                message="/index.php?id=1%20and%20if(substr(database(),1,1)%20=%20's',1,(select%20table_name%20from%20information_schema.tables))",
+            )
+            for i in range(1, 6)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [finding for finding in findings if finding.rule_id == "behavior.web_sql_injection"]
+        self.assertEqual(len(sqli), 1)
+        self.assertEqual(sqli[0].severity, "critical")
+        self.assertEqual(sqli[0].source_address, "172.17.0.1")
+        self.assertEqual(sqli[0].count, 5)
+        self.assertIsNotNone(sqli[0].severity_reason)
+        self.assertIsNotNone(sqli[0].confidence_reason)
+
+    def test_boolean_blind_sql_injection_group_mentions_enumeration_traits(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message=f"/index.php?id=1%20and%20if(substr(database(),{i},1)%20=%20'a',1,(select%20table_name%20from%20information_schema.tables))",
+                metadata={
+                    "decoded_request": f"/index.php?id=1 and if(substr(database(),{i},1) = 'a',1,(select table_name from information_schema.tables))",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 420 + i,
+                    "user_agent": "python-requests/2.26.0",
+                },
+            )
+            for i in range(1, 7)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [finding for finding in findings if finding.rule_id == "behavior.web_sql_injection"]
+        self.assertEqual(len(sqli), 1)
+        self.assertEqual(sqli[0].target, "/index.php")
+        self.assertIn("blind", sqli[0].confidence_reason.lower())
+        self.assertIn("substr", sqli[0].matched_keyword)
+
+    def test_access1_sample_creates_grouped_sql_injection_finding(self):
+        sample = Path(__file__).resolve().parent.parent / "samples" / "access1.log"
+        events = parse_files([sample])
+
+        findings = detect_findings(events, default_config())
+
+        sqli = [
+            finding for finding in findings
+            if finding.rule_id == "behavior.web_sql_injection"
+            and finding.source_address == "172.17.0.1"
+            and finding.target == "/index.php"
+        ]
+        self.assertEqual(len(sqli), 1)
+        self.assertGreaterEqual(sqli[0].count, 100)
+        self.assertLessEqual(len(sqli[0].evidence), 6)
+        self.assertTrue(
+            any(token in (sqli[0].matched_keyword or "") for token in ("information_schema", "substr", "select flag"))
+        )
+        self.assertIn("blind", (sqli[0].confidence_reason or "").lower())
+
+    def test_repeated_non_access_sql_text_does_not_emit_web_sql_injection(self):
+        events = [
+            Event(
+                source_file="app.log",
+                line_number=i,
+                raw_line="debug query select table_name from information_schema.tables and if(substr(database(),1,1) = 'a', 1, 0)",
+                category="application",
+                source_address="172.17.0.1",
+                message="debug query select table_name from information_schema.tables and if(substr(database(),1,1) = 'a', 1, 0)",
+            )
+            for i in range(1, 8)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(
+            any(f.rule_id == "behavior.web_sql_injection" for f in findings)
+        )
+
+    def test_web_sql_injection_evidence_is_bounded(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw sqli {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message=f"/index.php?id=1%20and%20if(substr(database(),{i},1)%20=%20'a',1,(select%20table_name%20from%20information_schema.tables))",
+                metadata={
+                    "decoded_request": f"/index.php?id=1 and if(substr(database(),{i},1) = 'a',1,(select table_name from information_schema.tables))",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 427,
+                },
+            )
+            for i in range(1, 21)
+        ]
+
+        finding = next(
+            finding for finding in detect_findings(events, default_config())
+            if finding.rule_id == "behavior.web_sql_injection"
+        )
+
+        self.assertLessEqual(len(finding.evidence), 6)
+        self.assertEqual(finding.count, 20)
+
+    def test_repeated_benign_access_requests_do_not_emit_sql_injection(self):
+        events = [
+            Event(
+                source_file="access.log",
+                line_number=i,
+                raw_line=f"raw benign {i}",
+                category="access",
+                source_address="172.17.0.1",
+                target="/index.php",
+                message="/index.php?page=home",
+                metadata={
+                    "decoded_request": "/index.php?page=home",
+                    "path": "/index.php",
+                    "status_code": 200,
+                    "response_size": 512,
+                },
+            )
+            for i in range(1, 30)
+        ]
+
+        findings = detect_findings(events, default_config())
+
+        self.assertFalse(any(f.rule_id == "behavior.web_sql_injection" for f in findings))
+
     def test_sudo_failure_creates_privilege_escalation_finding(self):
         event = Event(
             source_file="auth.log",
@@ -193,140 +341,139 @@ class RuleTests(unittest.TestCase):
             any(finding.rule_id == "behavior.multi_signal_source" for finding in findings)
         )
 
-    def test_template_burst_detects_repeated_variable_suspicious_events(self):
-        config = DetectionConfig(
-            keywords=default_config().keywords,
-            template_burst_threshold=3,
-        )
-        events = [
-            Event(
-                "app.log",
-                i,
-                f"2026-06-10 ERROR unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
-                category="application",
-                actor="guest",
-                source_address="192.0.2.10",
-                message=f"unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
-            )
-            for i in range(1, 4)
-        ]
-
-        findings = detect_findings(events, config)
-        burst = [
-            finding for finding in findings if finding.rule_id == "behavior.template_burst"
-        ]
-
-        self.assertEqual(len(burst), 1)
-        self.assertEqual(burst[0].count, 3)
-        self.assertEqual(burst[0].source_address, "192.0.2.10")
-        self.assertIn("unauthorized access", burst[0].explanation.lower())
-        self.assertIsNotNone(burst[0].severity_reason)
-        self.assertIsNotNone(burst[0].confidence_reason)
-        self.assertEqual(len(burst[0].evidence), 3)
-
-    def test_template_burst_ignores_repeated_events_below_threshold(self):
-        config = DetectionConfig(
-            keywords=default_config().keywords,
-            template_burst_threshold=4,
-        )
-        events = [
-            Event(
-                "app.log",
-                i,
-                f"2026-06-10 ERROR unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
-                category="application",
-                actor="guest",
-                source_address="192.0.2.10",
-                message=f"unauthorized access user=guest ip=192.0.2.{i} path=/admin/{i}",
-            )
-            for i in range(1, 4)
-        ]
-
-        findings = detect_findings(events, config)
-
-        self.assertFalse(
-            any(finding.rule_id == "behavior.template_burst" for finding in findings)
-        )
-
-    def test_auth_to_privilege_sequence_creates_correlated_finding(self):
-        start = datetime(2026, 6, 10, 10, 0, 0)
-        config = DetectionConfig(
-            keywords=default_config().keywords,
-            sequence_window_minutes=10,
-        )
+    def test_public_source_cluster_created_for_global_source_with_multiple_signals(self):
         events = [
             Event(
                 "auth.log",
                 1,
-                "Jun 10 10:00:00 host sshd[1]: Failed password for admin from 192.0.2.10 port 22 ssh2",
-                timestamp=start,
+                "Failed password for root from 8.8.8.8",
                 category="auth",
-                source_address="192.0.2.10",
-                actor="admin",
-                message="Failed password for admin from 192.0.2.10",
+                actor="root",
+                source_address="8.8.8.8",
+                message="Failed password for root from 8.8.8.8",
+                metadata={
+                    "source_address_context": {
+                        "address": "8.8.8.8",
+                        "is_valid": True,
+                        "is_global": True,
+                        "category": "global",
+                        "reason": "Globally routable public source address.",
+                    }
+                },
             ),
             Event(
                 "auth.log",
                 2,
-                "Jun 10 10:03:00 host sudo: pam_unix(sudo:auth): authentication failure; user=root",
-                timestamp=start + timedelta(minutes=3),
+                "Invalid user admin from 8.8.8.8",
                 category="auth",
-                source_address="192.0.2.10",
                 actor="admin",
-                target="root",
-                message="sudo:auth authentication failure user=root",
+                source_address="8.8.8.8",
+                message="Invalid user admin from 8.8.8.8",
+                metadata={
+                    "source_address_context": {
+                        "address": "8.8.8.8",
+                        "is_valid": True,
+                        "is_global": True,
+                        "category": "global",
+                        "reason": "Globally routable public source address.",
+                    }
+                },
             ),
         ]
 
-        findings = detect_findings(events, config)
-        sequence = [
+        findings = detect_findings(events, default_config())
+
+        public_clusters = [
             finding
             for finding in findings
-            if finding.rule_id == "behavior.auth_to_privilege_sequence"
+            if finding.rule_id == "behavior.public_source_cluster"
         ]
+        self.assertEqual(len(public_clusters), 1)
+        self.assertEqual(public_clusters[0].source_address, "8.8.8.8")
+        self.assertIn("globally routable", public_clusters[0].explanation.lower())
+        self.assertLessEqual(len(public_clusters[0].evidence), 5)
 
-        self.assertEqual(len(sequence), 1)
-        self.assertEqual(sequence[0].source_address, "192.0.2.10")
-        self.assertEqual(sequence[0].count, 2)
-        self.assertEqual(len(sequence[0].evidence), 2)
-        self.assertIsNotNone(sequence[0].severity_reason)
-        self.assertIsNotNone(sequence[0].confidence_reason)
-
-    def test_auth_to_privilege_sequence_respects_window(self):
-        start = datetime(2026, 6, 10, 10, 0, 0)
-        config = DetectionConfig(
-            keywords=default_config().keywords,
-            sequence_window_minutes=10,
-        )
+    def test_public_source_cluster_suppresses_private_and_documentation_sources(self):
         events = [
             Event(
                 "auth.log",
                 1,
-                "Failed password for admin from 192.0.2.10",
-                timestamp=start,
+                "Failed password for root from 192.168.2.1",
                 category="auth",
-                source_address="192.0.2.10",
-                actor="admin",
-                message="Failed password for admin from 192.0.2.10",
+                actor="root",
+                source_address="192.168.2.1",
+                message="Failed password for root from 192.168.2.1",
+                metadata={
+                    "source_address_context": {
+                        "address": "192.168.2.1",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "private",
+                        "reason": "Private address used inside local networks.",
+                    }
+                },
             ),
             Event(
                 "auth.log",
                 2,
-                "sudo:auth authentication failure user=root",
-                timestamp=start + timedelta(minutes=30),
+                "Invalid user admin from 192.168.2.1",
                 category="auth",
-                source_address="192.0.2.10",
                 actor="admin",
-                target="root",
-                message="sudo:auth authentication failure user=root",
+                source_address="192.168.2.1",
+                message="Invalid user admin from 192.168.2.1",
+                metadata={
+                    "source_address_context": {
+                        "address": "192.168.2.1",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "private",
+                        "reason": "Private address used inside local networks.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                3,
+                "Failed password for root from 203.0.113.10",
+                category="auth",
+                actor="root",
+                source_address="203.0.113.10",
+                message="Failed password for root from 203.0.113.10",
+                metadata={
+                    "source_address_context": {
+                        "address": "203.0.113.10",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "documentation",
+                        "reason": "Documentation/test address range.",
+                    }
+                },
+            ),
+            Event(
+                "auth.log",
+                4,
+                "Invalid user admin from 203.0.113.10",
+                category="auth",
+                actor="admin",
+                source_address="203.0.113.10",
+                message="Invalid user admin from 203.0.113.10",
+                metadata={
+                    "source_address_context": {
+                        "address": "203.0.113.10",
+                        "is_valid": True,
+                        "is_global": False,
+                        "category": "documentation",
+                        "reason": "Documentation/test address range.",
+                    }
+                },
             ),
         ]
 
-        findings = detect_findings(events, config)
+        findings = detect_findings(events, default_config())
 
         self.assertFalse(
             any(
-                finding.rule_id == "behavior.auth_to_privilege_sequence"
+                finding.rule_id == "behavior.public_source_cluster"
                 for finding in findings
             )
         )
@@ -354,11 +501,6 @@ class RuleTests(unittest.TestCase):
             {
                 "keywords": {"custom_rule": ["needle"]},
                 "brute_force": {"threshold": 3, "window_minutes": 7},
-                "behavior": {
-                    "enabled": True,
-                    "template_burst_threshold": 4,
-                    "sequence_window_minutes": 10,
-                },
             },
         )
 
@@ -375,75 +517,6 @@ class RuleTests(unittest.TestCase):
             reloaded = load_config(path)
 
         self.assertEqual(reloaded, original)
-
-    def test_behavior_rule_config_is_loaded(self):
-        with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "rules.json"
-            path.write_text(
-                json.dumps(
-                    {
-                        "behavior": {
-                            "enabled": True,
-                            "template_burst_threshold": 3,
-                            "sequence_window_minutes": 15,
-                        }
-                    }
-                ),
-                encoding="utf-8",
-            )
-
-            config = load_config(path)
-
-        self.assertTrue(config.behavior_enabled)
-        self.assertEqual(config.template_burst_threshold, 3)
-        self.assertEqual(config.sequence_window_minutes, 15)
-
-    def test_behavior_config_to_dict_can_be_reloaded_from_json(self):
-        original = DetectionConfig(
-            keywords={"custom_rule": ["needle"]},
-            brute_force_threshold=4,
-            brute_force_window_minutes=12,
-            behavior_enabled=True,
-            template_burst_threshold=3,
-            sequence_window_minutes=15,
-        )
-        with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "rules.json"
-            path.write_text(json.dumps(config_to_dict(original)), encoding="utf-8")
-
-            reloaded = load_config(path)
-
-        self.assertEqual(reloaded, original)
-
-    def test_rule_config_rejects_invalid_behavior_values(self):
-        cases = [
-            {"enabled": "yes"},
-            {"template_burst_threshold": True},
-            {"template_burst_threshold": 0},
-            {"template_burst_threshold": 2.5},
-            {"sequence_window_minutes": False},
-            {"sequence_window_minutes": 0},
-            {"sequence_window_minutes": 7.5},
-        ]
-        for behavior in cases:
-            with self.subTest(behavior=behavior):
-                with TemporaryDirectory() as tmp:
-                    path = Path(tmp) / "rules.json"
-                    path.write_text(json.dumps({"behavior": behavior}), encoding="utf-8")
-
-                    with self.assertRaises(ValueError):
-                        load_config(path)
-
-    def test_rule_config_rejects_unsupported_behavior_fields(self):
-        with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "rules.json"
-            path.write_text(
-                json.dumps({"behavior": {"template_burst_threshold": 3, "mode": "remote"}}),
-                encoding="utf-8",
-            )
-
-            with self.assertRaises(ValueError):
-                load_config(path)
 
     def test_yaml_rule_file_is_loaded_when_yaml_is_available(self):
         if importlib.util.find_spec("yaml") is None:

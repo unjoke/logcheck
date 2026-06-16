@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from datetime import timedelta
 import re
+from collections import defaultdict
+from urllib.parse import unquote_plus
 
+from .ip_context import classify_ip_address
 from .models import DetectionConfig, Event, Finding
 
 
@@ -15,35 +16,17 @@ SEVERITY_BY_RULE = {
     "sudo_failure": "high",
     "suspicious_command": "critical",
 }
-SUSPICIOUS_TEMPLATE_TERMS = (
-    "failed password",
-    "failed login",
-    "authentication failure",
-    "invalid user",
-    "unauthorized access",
-    "permission denied",
-    "sudo",
-    "su:",
-    "/etc/shadow",
-    "/root",
-    "/admin",
-    "curl http",
-    "wget http",
-    "nc -e",
-    "bash -i",
-)
-AUTH_FAILURE_TERMS = ("failed password", "failed login", "authentication failure")
 
 
 def detect_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
     findings: list[Finding] = []
     findings.extend(_keyword_findings(events, config))
+    findings.extend(_web_sql_injection_findings(events))
     findings.extend(_suspicious_command_findings(events, config))
     findings.extend(_privilege_escalation_findings(events))
     findings.extend(_brute_force_findings(events, config))
-    findings.extend(_template_burst_findings(events, config))
-    findings.extend(_auth_to_privilege_sequence_findings(events, config))
     findings.extend(_multi_signal_findings(findings))
+    findings.extend(_public_source_cluster_findings(findings, events))
     return findings
 
 
@@ -51,45 +34,8 @@ def _event_text(event: Event) -> str:
     return f"{event.raw_line}\n{event.message or ''}".lower()
 
 
-def _normalize_template(text: str) -> str:
-    template = text.lower()
-    template = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "<ip>", template)
-    template = re.sub(r"\b[0-9a-f]{12,}\b", "<hex>", template)
-    template = re.sub(r"(['\"])(?:(?=(\\?))\2.)*?\1", "<quoted>", template)
-    template = re.sub(r"/[a-z0-9_./-]+", "<path>", template)
-    template = re.sub(r"\b\d+\b", "<num>", template)
-    template = re.sub(r"\s+", " ", template).strip()
-    return template
-
-
-def _is_suspicious_template(text: str) -> bool:
-    lowered = text.lower()
-    return any(term in lowered for term in SUSPICIOUS_TEMPLATE_TERMS)
-
-
-def _is_auth_failure(event: Event) -> bool:
-    text = _event_text(event)
-    return any(term in text for term in AUTH_FAILURE_TERMS)
-
-
-def _is_privilege_signal(event: Event) -> bool:
-    text = _event_text(event)
-    return any(indicator.lower() in text for indicator in PRIVILEGE_ESCALATION_INDICATORS)
-
-
-def _entity_keys(event: Event) -> list[tuple[str, str]]:
-    if event.source_address:
-        return [("source", event.source_address)]
-    if event.actor:
-        return [("actor", event.actor)]
-    return []
-
-
-def _within_window(first: Event, second: Event, window_minutes: int) -> bool:
-    if first.timestamp is None or second.timestamp is None:
-        return second.line_number > first.line_number
-    delta = second.timestamp - first.timestamp
-    return timedelta(0) < delta <= timedelta(minutes=window_minutes)
+def _decoded_event_text(event: Event) -> str:
+    return unquote_plus(_event_text(event))
 
 
 def _keyword_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
@@ -144,6 +90,154 @@ def _suspicious_command_findings(events: list[Event], config: DetectionConfig) -
                     )
                 )
                 break
+    return findings
+
+
+SQL_INJECTION_INDICATORS = (
+    "information_schema",
+    "select table_name",
+    "select flag",
+    "substr(",
+    "database()",
+    " and if(",
+    " union select",
+)
+SQL_INJECTION_BURST_THRESHOLD = 5
+SUBSTR_POSITION_RE = re.compile(r"substr\([^,]+,\s*(\d+)\s*,\s*1\s*\)", re.IGNORECASE)
+
+
+def _access_request_text(event: Event) -> str:
+    decoded = event.metadata.get("decoded_request") if event.metadata else None
+    if isinstance(decoded, str):
+        return decoded.lower()
+    return _decoded_event_text(event)
+
+
+def _access_group_key(event: Event) -> tuple[str, str]:
+    source = event.source_address or event.actor or event.source_file or "unknown"
+    path = event.target
+    if not path and event.metadata:
+        raw_path = event.metadata.get("path")
+        path = raw_path if isinstance(raw_path, str) else None
+    return source, path or "unknown"
+
+
+def _sql_injection_indicators(text: str) -> set[str]:
+    return {indicator for indicator in SQL_INJECTION_INDICATORS if indicator in text}
+
+
+def _substr_positions(text: str) -> set[int]:
+    return {int(match.group(1)) for match in SUBSTR_POSITION_RE.finditer(text)}
+
+
+def _representative_evidence(events: list[Event], limit: int = 6) -> list[str]:
+    evidence: list[str] = []
+    seen: set[str] = set()
+    for event in events:
+        if event.raw_line in seen:
+            continue
+        evidence.append(event.raw_line)
+        seen.add(event.raw_line)
+        if len(evidence) >= limit:
+            break
+    return evidence
+
+
+def _web_sql_injection_findings(events: list[Event]) -> list[Finding]:
+    buckets: dict[tuple[str, str], list[Event]] = defaultdict(list)
+    matched_indicators: dict[tuple[str, str], set[str]] = defaultdict(set)
+    substr_positions: dict[tuple[str, str], set[int]] = defaultdict(set)
+    response_sizes: dict[tuple[str, str], set[int]] = defaultdict(set)
+    extraction_targets: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for event in events:
+        if event.category != "access":
+            continue
+        text = _access_request_text(event)
+        indicators = _sql_injection_indicators(text)
+        if len(indicators) < 2:
+            continue
+        key = _access_group_key(event)
+        buckets[key].append(event)
+        matched_indicators[key].update(indicators)
+        substr_positions[key].update(_substr_positions(text))
+        if "information_schema" in indicators:
+            extraction_targets[key].add("information_schema")
+        if "select table_name" in indicators:
+            extraction_targets[key].add("table names")
+        if "select flag" in indicators:
+            extraction_targets[key].add("flag")
+        if event.metadata:
+            response_size = event.metadata.get("response_size")
+            if isinstance(response_size, int):
+                response_sizes[key].add(response_size)
+
+    findings: list[Finding] = []
+    indicator_priority = (
+        "substr(",
+        " and if(",
+        "information_schema",
+        "select flag",
+        "select table_name",
+        "database()",
+        " union select",
+    )
+    indicator_labels = {"substr(": "substr", " and if(": "and if("}
+    for key, bucket in buckets.items():
+        if len(bucket) < SQL_INJECTION_BURST_THRESHOLD:
+            continue
+        first = bucket[0]
+        source, path = key
+        indicators = [
+            indicator
+            for indicator in indicator_priority
+            if indicator in matched_indicators[key]
+        ]
+        indicators.extend(
+            sorted(matched_indicators[key].difference(indicators))
+        )
+        matched_keyword = ", ".join(
+            indicator_labels.get(indicator, indicator) for indicator in indicators
+        )
+        positions = sorted(substr_positions[key])
+        conditional_substr = "substr(" in matched_indicators[key] and " and if(" in matched_indicators[key]
+        if positions or conditional_substr:
+            traits = ["boolean-blind SQL injection enumeration"]
+            if positions:
+                traits.append(f"substr positions {positions[0]}-{positions[-1]}")
+            if extraction_targets[key]:
+                traits.append(f"targets {', '.join(sorted(extraction_targets[key]))}")
+            if response_sizes[key]:
+                sizes = sorted(response_sizes[key])
+                traits.append(f"response sizes {sizes[0]}-{sizes[-1]}")
+            confidence_reason = (
+                "Grouped request traits indicate " + "; ".join(traits) + "."
+            )
+        else:
+            confidence_reason = (
+                "URL-decoded request text matched multiple SQL injection indicators across a burst."
+            )
+        findings.append(
+            Finding(
+                rule_id="behavior.web_sql_injection",
+                severity="critical",
+                explanation=(
+                    f"{len(bucket)} URL-decoded web requests from {source} to {path} match SQL injection indicators."
+                ),
+                evidence=_representative_evidence(bucket),
+                source_file=first.source_file,
+                line_number=first.line_number,
+                timestamp=first.timestamp,
+                source_address=first.source_address,
+                actor=first.actor,
+                target=first.target or (path if path != "unknown" else None),
+                matched_keyword=matched_keyword,
+                count=len(bucket),
+                severity_reason=(
+                    "Repeated SQL injection indicators in access logs are critical attack behavior."
+                ),
+                confidence_reason=confidence_reason,
+            )
+        )
     return findings
 
 
@@ -226,116 +320,6 @@ def _brute_force_findings(events: list[Event], config: DetectionConfig) -> list[
     return findings
 
 
-def _template_burst_findings(events: list[Event], config: DetectionConfig) -> list[Finding]:
-    if not config.behavior_enabled:
-        return []
-
-    buckets: dict[tuple[str, str], list[Event]] = defaultdict(list)
-    for event in events:
-        text = _event_text(event)
-        if not _is_suspicious_template(text):
-            continue
-        entity = event.source_address or event.actor or "unknown"
-        buckets[(entity, _normalize_template(text))].append(event)
-
-    findings: list[Finding] = []
-    for (entity, template), bucket in buckets.items():
-        if len(bucket) < config.template_burst_threshold:
-            continue
-        first = bucket[0]
-        findings.append(
-            Finding(
-                rule_id="behavior.template_burst",
-                severity="high",
-                explanation=(
-                    f"{len(bucket)} suspicious local events matched normalized template "
-                    f"`{template}` for {entity}."
-                ),
-                evidence=[event.raw_line for event in bucket[:5]],
-                source_file=first.source_file,
-                line_number=first.line_number,
-                timestamp=first.timestamp,
-                source_address=first.source_address,
-                actor=first.actor,
-                target=first.target,
-                count=len(bucket),
-                severity_reason=(
-                    "Repeated suspicious template activity meets the configured burst threshold."
-                ),
-                confidence_reason=(
-                    "Variable tokens were normalized and repeated raw local evidence matched "
-                    "the same suspicious template."
-                ),
-            )
-        )
-    return findings
-
-
-def _auth_to_privilege_sequence_findings(
-    events: list[Event], config: DetectionConfig
-) -> list[Finding]:
-    if not config.behavior_enabled:
-        return []
-
-    auth_by_entity: dict[tuple[str, str], list[Event]] = defaultdict(list)
-    privilege_by_entity: dict[tuple[str, str], list[Event]] = defaultdict(list)
-    for event in events:
-        for key in _entity_keys(event):
-            if _is_auth_failure(event):
-                auth_by_entity[key].append(event)
-            if _is_privilege_signal(event):
-                privilege_by_entity[key].append(event)
-
-    findings: list[Finding] = []
-    seen_entities: set[tuple[str, str]] = set()
-    for key, auth_events in auth_by_entity.items():
-        privilege_events = privilege_by_entity.get(key, [])
-        if not privilege_events:
-            continue
-        match = next(
-            (
-                (auth_event, privilege_event)
-                for auth_event in auth_events
-                for privilege_event in privilege_events
-                if _within_window(auth_event, privilege_event, config.sequence_window_minutes)
-            ),
-            None,
-        )
-        if match is None:
-            continue
-        if key in seen_entities:
-            continue
-        seen_entities.add(key)
-        first_auth, first_privilege = match
-        entity_type, entity = key
-        findings.append(
-            Finding(
-                rule_id="behavior.auth_to_privilege_sequence",
-                severity="high",
-                explanation=(
-                    f"{entity_type.title()} {entity} showed failed authentication followed "
-                    "by privilege-escalation evidence in local logs."
-                ),
-                evidence=[first_auth.raw_line, first_privilege.raw_line],
-                source_file=first_auth.source_file,
-                line_number=first_auth.line_number,
-                timestamp=first_auth.timestamp,
-                source_address=entity if entity_type == "source" else first_auth.source_address,
-                actor=entity if entity_type == "actor" else first_auth.actor,
-                target=first_privilege.target,
-                count=2,
-                severity_reason=(
-                    "Authentication failure followed by privilege-escalation evidence raises "
-                    "local review priority."
-                ),
-                confidence_reason=(
-                    "Both stages were observed in raw local log evidence for the same entity."
-                ),
-            )
-        )
-    return findings
-
-
 def _multi_signal_findings(findings: list[Finding]) -> list[Finding]:
     buckets: dict[tuple[str, str], list[Finding]] = defaultdict(list)
     for finding in findings:
@@ -378,3 +362,73 @@ def _multi_signal_findings(findings: list[Finding]) -> list[Finding]:
             )
         )
     return correlated
+
+
+def _source_address_context(event: Event) -> dict[str, object]:
+    metadata = event.metadata or {}
+    context = metadata.get("source_address_context")
+    if isinstance(context, dict) and context.get("address") == event.source_address:
+        return context
+    if event.source_address:
+        return classify_ip_address(event.source_address).to_dict()
+    return {
+        "address": "",
+        "is_valid": False,
+        "version": None,
+        "category": "missing",
+        "is_global": False,
+        "reason": "No source address available.",
+    }
+
+
+def _public_source_cluster_findings(findings: list[Finding], events: list[Event]) -> list[Finding]:
+    findings_by_source: dict[str, list[Finding]] = defaultdict(list)
+    source_contexts: dict[str, dict[str, object]] = {}
+
+    for event in events:
+        if not event.source_address:
+            continue
+        source_contexts.setdefault(event.source_address, _source_address_context(event))
+
+    for finding in findings:
+        if finding.source_address:
+            findings_by_source[finding.source_address].append(finding)
+
+    clustered: list[Finding] = []
+    for source, bucket in findings_by_source.items():
+        if len(bucket) < 2:
+            continue
+
+        context = source_contexts.get(source) or classify_ip_address(source).to_dict()
+        if not context.get("is_global"):
+            continue
+
+        evidence: list[str] = []
+        for finding in bucket:
+            for item in finding.evidence:
+                if item not in evidence:
+                    evidence.append(item)
+                if len(evidence) >= 5:
+                    break
+            if len(evidence) >= 5:
+                break
+
+        clustered.append(
+            Finding(
+                rule_id="behavior.public_source_cluster",
+                severity="medium",
+                explanation=(
+                    f"Globally routable source {source} is associated with multiple suspicious findings."
+                ),
+                evidence=evidence,
+                source_file=bucket[0].source_file,
+                line_number=bucket[0].line_number,
+                timestamp=bucket[0].timestamp,
+                source_address=source,
+                actor=bucket[0].actor,
+                count=len(bucket),
+                severity_reason="Public sources with repeated suspicious findings deserve review.",
+                confidence_reason=str(context.get("reason") or "Source address classified locally as global."),
+            )
+        )
+    return clustered

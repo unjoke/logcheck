@@ -27,6 +27,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(event.actor, "guest")
         self.assertEqual(event.source_address, "198.51.100.7")
 
+    def test_parse_access_line_extracts_request_context_and_source_ip(self):
+        event = parse_line(
+            "access.log",
+            1,
+            '172.17.0.1 - - [01/Sep/2021:01:37:25 +0000] "GET /index.php?id=1%20and%20if(substr(database(),1,1)%20=%20'
+            "'s',1,(select%20table_name%20from%20information_schema.tables)) HTTP/1.1\" 200 472 \"-\" \"python-requests/2.26.0\"",
+        )
+
+        self.assertEqual(event.category, "access")
+        self.assertEqual(event.source_address, "172.17.0.1")
+        self.assertIn("/index.php", event.message)
+        self.assertEqual(event.target, "/index.php")
+        self.assertEqual(event.metadata["method"], "GET")
+        self.assertEqual(event.metadata["status_code"], 200)
+        self.assertEqual(event.metadata["response_size"], 472)
+        self.assertEqual(event.metadata["user_agent"], "python-requests/2.26.0")
+        self.assertIn("and if(substr(database(),1,1)", event.metadata["decoded_request"])
+        self.assertEqual(event.metadata["path"], "/index.php")
+        self.assertIsNotNone(event.timestamp)
+        self.assertEqual(event.timestamp.isoformat(), "2021-09-01T01:37:25+00:00")
+
     def test_unknown_line_is_preserved(self):
         event = parse_line("misc.log", 3, "not a known format")
         self.assertEqual(event.category, "unknown")

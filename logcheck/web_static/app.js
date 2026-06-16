@@ -1,6 +1,5 @@
 const state = {
   latestAnalysisId: "",
-  latestPayload: null,
   findings: [],
   selectedFindingIndex: null,
   language: localStorage.getItem("logcheckLanguage") || "en",
@@ -17,7 +16,6 @@ const state = {
 const form = document.querySelector("#analysis-form");
 const fileInput = document.querySelector("#log-files");
 const sampleSelect = document.querySelector("#sample-select");
-const runButton = document.querySelector("#run-analysis");
 const runState = document.querySelector("#run-state");
 const findingList = document.querySelector("#finding-list");
 const queueCount = document.querySelector("#queue-count");
@@ -35,8 +33,11 @@ const charts = {
   source: document.querySelector("#source-chart"),
   time: document.querySelector("#time-chart"),
   severity: document.querySelector("#severity-chart"),
+  rule: document.querySelector("#rule-chart"),
+  sourceFile: document.querySelector("#source-file-chart"),
   attackerIps: document.querySelector("#attacker-ip-stats"),
 };
+const CHART_LIMIT = 6;
 
 const metrics = {
   events: document.querySelector("#metric-events"),
@@ -64,35 +65,31 @@ const TRANSLATIONS = {
     noFindingsQueue: "No findings in the queue.",
     noFilteredFindings: "No findings match the current filters.",
     noAttackerIps: "No source addresses were found in local findings.",
-    runCharts: "Run analysis to populate local charts.",
     noTimeData: "No time or evidence-order data to chart.",
+    runCharts: "Run analysis to populate local charts.",
   },
   zh: {
-    languageLabel: "\u8bed\u8a00",
-    findingQueue: "\u53d1\u73b0\u961f\u5217",
-    timeDistribution: "\u65f6\u95f4\u5206\u5e03",
-    attackerIpStatistics: "\u653b\u51fb IP \u7edf\u8ba1",
-    keywordFilter: "\u5173\u952e\u8bcd\u8fc7\u6ee4",
-    severityFilter: "\u4e25\u91cd\u7ea7\u522b",
-    ruleFilter: "\u89c4\u5219",
-    sourceFilter: "\u6e90\u5730\u5740",
-    previousPage: "\u4e0a\u4e00\u9875",
-    nextPage: "\u4e0b\u4e00\u9875",
-    allSeverities: "\u5168\u90e8\u7ea7\u522b",
-    allRules: "\u5168\u90e8\u89c4\u5219",
-    allSources: "\u5168\u90e8\u6765\u6e90",
-    evidenceOrderDistribution: "\u8bc1\u636e\u987a\u5e8f\u5206\u5e03",
-    noFindingsQueue: "\u961f\u5217\u4e2d\u6ca1\u6709\u53d1\u73b0",
-    noFilteredFindings: "\u6ca1\u6709\u7b26\u5408\u5f53\u524d\u8fc7\u6ee4\u6761\u4ef6\u7684\u53d1\u73b0",
-    noAttackerIps: "\u672c\u5730\u53d1\u73b0\u4e2d\u6ca1\u6709\u6e90\u5730\u5740",
-    runCharts: "\u8fd0\u884c\u5206\u6790\u540e\u751f\u6210\u672c\u5730\u56fe\u8868",
-    noTimeData: "\u6ca1\u6709\u53ef\u7528\u7684\u65f6\u95f4\u6216\u8bc1\u636e\u987a\u5e8f\u6570\u636e",
+    languageLabel: "语言",
+    findingQueue: "发现队列",
+    timeDistribution: "时间分布",
+    attackerIpStatistics: "攻击 IP 统计",
+    keywordFilter: "关键词过滤",
+    severityFilter: "严重级别",
+    ruleFilter: "规则",
+    sourceFilter: "源地址",
+    previousPage: "上一页",
+    nextPage: "下一页",
+    allSeverities: "全部级别",
+    allRules: "全部规则",
+    allSources: "全部来源",
+    evidenceOrderDistribution: "证据顺序分布",
+    noFindingsQueue: "队列中没有发现。",
+    noFilteredFindings: "没有符合当前过滤条件的发现。",
+    noAttackerIps: "本地发现中没有源地址。",
+    noTimeData: "没有可用的时间或证据顺序数据。",
+    runCharts: "运行分析后生成本地图表。",
   },
 };
-
-function t(key) {
-  return (TRANSLATIONS[state.language] && TRANSLATIONS[state.language][key]) || TRANSLATIONS.en[key] || key;
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   languageSelect.value = state.language;
@@ -106,57 +103,15 @@ form.addEventListener("submit", async (event) => {
 });
 
 exportButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    await downloadExport(button);
+  button.addEventListener("click", () => {
+    if (!state.latestAnalysisId) {
+      return;
+    }
+    const format = button.dataset.format;
+    const analysisId = encodeURIComponent(state.latestAnalysisId);
+    window.location.assign(`/api/exports/${format}?analysis_id=${analysisId}`);
   });
 });
-
-async function downloadExport(button) {
-  if (!state.latestAnalysisId) {
-    setRunState("Run analysis before exporting.");
-    return;
-  }
-
-  const format = button.dataset.format;
-  const analysisId = encodeURIComponent(state.latestAnalysisId);
-  const url = `/api/exports/${format}?analysis_id=${analysisId}`;
-  button.disabled = true;
-  setRunState("Exporting");
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      let message = "Export failed.";
-      try {
-        const payload = await response.json();
-        message = payload.error || message;
-      } catch (error) {
-        message = "Export failed.";
-      }
-      throw new Error(message);
-    }
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = exportFilename(format);
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(downloadUrl);
-    setRunState("Export complete");
-  } catch (error) {
-    setRunState(error.message || "Export failed.");
-  } finally {
-    button.disabled = false;
-  }
-}
-
-function exportFilename(format) {
-  if (format === "markdown") {
-    return "analysis.md";
-  }
-  return `analysis.${format}`;
-}
 
 languageSelect.addEventListener("change", () => {
   setLanguage(languageSelect.value);
@@ -177,22 +132,6 @@ for (const [element, key] of [
     state.filters[key] = element.value;
     state.findingPage = 1;
     renderFindings(state.findings);
-  });
-}
-
-function setLanguage(language) {
-  state.language = TRANSLATIONS[language] ? language : "en";
-  localStorage.setItem("logcheckLanguage", state.language);
-  languageSelect.value = state.language;
-  applyTranslations();
-  buildFilterOptions(state.findings);
-  renderFindings(state.findings);
-  renderCharts(state.latestPayload || { findings: state.findings, summary: {}, insights: {} });
-}
-
-function applyTranslations() {
-  document.querySelectorAll("[data-i18n]").forEach((element) => {
-    element.textContent = t(element.dataset.i18n);
   });
 }
 
@@ -220,29 +159,13 @@ function renderSamples(samples) {
   for (const sample of samples) {
     sampleSelect.append(new Option(sample.name, sample.id));
   }
-  const defaultOption =
-    Array.from(sampleSelect.options).find((option) => option.value === "incident.log") ||
-    sampleSelect.options[0];
-  if (defaultOption) {
-    defaultOption.selected = true;
-  }
 }
 
 async function runAnalysis() {
-  if (!hasLocalInput()) {
-    state.latestAnalysisId = "";
-    state.latestPayload = null;
-    state.findings = [];
-    renderError("Select at least one local log file or sample log.");
-    setRunState("Needs input");
-    return;
-  }
-
   const body = new FormData(form);
 
   setRunState("Running");
   toggleExports(false);
-  runButton.disabled = true;
 
   try {
     const response = await fetch("/api/analyze", {
@@ -255,45 +178,38 @@ async function runAnalysis() {
     }
     state.latestAnalysisId = payload.analysis_id || "";
     state.findings = payload.findings || [];
-    resetFindingFilters();
     renderResult(payload);
     toggleExports(Boolean(state.latestAnalysisId));
     setRunState("Complete");
   } catch (error) {
     state.latestAnalysisId = "";
-    state.latestPayload = null;
     state.findings = [];
     renderError(error.message || "Analysis failed.");
-    toggleExports(false);
-    setRunState("Needs attention");
-  } finally {
-    runButton.disabled = false;
+    setRunState("Needs input");
   }
 }
 
-function hasLocalInput() {
-  return (
-    fileInput.files.length > 0 ||
-    Array.from(sampleSelect.selectedOptions).some((option) => option.value)
-  );
+function setLanguage(language) {
+  state.language = TRANSLATIONS[language] ? language : "en";
+  localStorage.setItem("logcheckLanguage", state.language);
+  languageSelect.value = state.language;
+  applyTranslations();
+  buildFilterOptions(state.findings);
+  renderFindings(state.findings);
 }
 
-function resetFindingFilters() {
-  state.filters = {
-    keyword: "",
-    severity: "",
-    rule: "",
-    source: "",
-  };
-  findingSearch.value = "";
-  severityFilter.value = "";
-  ruleFilter.value = "";
-  sourceFilter.value = "";
+function t(key) {
+  return (TRANSLATIONS[state.language] && TRANSLATIONS[state.language][key]) || TRANSLATIONS.en[key] || key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
 }
 
 function renderResult(payload) {
   const summary = payload.summary || {};
-  state.latestPayload = { ...payload, findings: state.findings };
   metrics.events.textContent = summary.total_events ?? 0;
   metrics.findings.textContent = summary.total_findings ?? state.findings.length;
   metrics.sources.textContent = Array.isArray(summary.analyzed_sources) ? summary.analyzed_sources.length : 0;
@@ -303,15 +219,16 @@ function renderResult(payload) {
   renderFindings(state.findings);
   renderInsights(payload.insights || []);
   renderCharts(payload);
-  if (!state.findings.length) {
+  if (state.findings.length) {
+    renderSelectedAlert(state.findings[0], 0);
+  } else {
     clearSelectedAlert("No findings were produced for the selected local material.");
   }
 }
 
 function renderFindings(findings) {
-  const indexedFindings = findings.map((finding, originalIndex) => ({ finding, originalIndex }));
-  const filteredFindings = applyFindingFilters(indexedFindings);
-  const { pageCount, pageFindings } = paginateFindings(filteredFindings);
+  const filteredFindings = applyFindingFilters(findings);
+  const { pageCount, pageFindings, start } = paginateFindings(filteredFindings);
   queueCount.textContent = `${filteredFindings.length} ${filteredFindings.length === 1 ? "item" : "items"}`;
   findingList.innerHTML = "";
   if (!findings.length) {
@@ -325,7 +242,8 @@ function renderFindings(findings) {
     renderPagination(pageCount, filteredFindings.length);
     return;
   }
-  pageFindings.forEach(({ finding, originalIndex }, pageIndex) => {
+  pageFindings.forEach((finding, pageIndex) => {
+    const index = start + pageIndex;
     const button = document.createElement("button");
     button.type = "button";
     button.className = `finding-card${pageIndex === 0 ? " active" : ""}`;
@@ -342,20 +260,18 @@ function renderFindings(findings) {
     button.addEventListener("click", () => {
       document.querySelectorAll(".finding-card").forEach((card) => card.classList.remove("active"));
       button.classList.add("active");
-      state.selectedFindingIndex = originalIndex;
-      renderSelectedAlert(finding, originalIndex);
+      renderSelectedAlert(finding, index);
     });
     findingList.append(button);
   });
-  state.selectedFindingIndex = pageFindings[0].originalIndex;
-  renderSelectedAlert(pageFindings[0].finding, pageFindings[0].originalIndex);
+  state.selectedFindingIndex = start;
+  renderSelectedAlert(pageFindings[0], start);
   renderPagination(pageCount, filteredFindings.length);
 }
 
 function applyFindingFilters(findings) {
   const keyword = normalizeFilterText(state.filters.keyword);
-  return findings.filter((item) => {
-    const finding = item.finding || item;
+  return findings.filter((finding) => {
     if (state.filters.severity && String(finding.severity || "").toLowerCase() !== state.filters.severity) {
       return false;
     }
@@ -432,7 +348,6 @@ function renderPagination(pageCount, total) {
 
   const status = document.createElement("span");
   status.textContent = `${state.findingPage} / ${pageCount}`;
-
   findingPagination.append(previous, status, next);
 }
 
@@ -454,88 +369,6 @@ function fillFilter(element, emptyLabel, values) {
     element.append(new Option(value, value));
   }
   element.value = values.includes(current) ? current : "";
-}
-
-function aggregateAttackerIps(findings) {
-  const rows = new Map();
-  findings.forEach((finding, index) => {
-    if (!finding.source_address) {
-      return;
-    }
-    const key = finding.source_address;
-    if (!rows.has(key)) {
-      rows.set(key, {
-        source: key,
-        count: 0,
-        severities: new Map(),
-        rules: new Set(),
-        actors: new Map(),
-        targets: new Map(),
-        first: finding.timestamp || sourceReference(finding),
-        last: finding.timestamp || sourceReference(finding),
-        representativeIndex: index,
-      });
-    }
-    const row = rows.get(key);
-    const severity = finding.severity || "unknown";
-    row.count += 1;
-    row.severities.set(severity, (row.severities.get(severity) || 0) + 1);
-    if (finding.rule_id) {
-      row.rules.add(finding.rule_id);
-    }
-    if (finding.actor) {
-      row.actors.set(finding.actor, (row.actors.get(finding.actor) || 0) + 1);
-    }
-    if (finding.target) {
-      row.targets.set(finding.target, (row.targets.get(finding.target) || 0) + 1);
-    }
-    row.last = finding.timestamp || sourceReference(finding);
-  });
-  return Array.from(rows.values()).sort((left, right) => right.count - left.count || left.source.localeCompare(right.source));
-}
-
-function sourceReference(finding) {
-  if (finding.source_file && finding.line_number) {
-    return `${finding.source_file}:${finding.line_number}`;
-  }
-  return finding.source_file || "local evidence";
-}
-
-function topMapValue(values) {
-  const rows = Array.from(values, ([label, count]) => ({ label, count }));
-  rows.sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
-  return rows.length ? rows[0].label : "n/a";
-}
-
-function renderAttackerIpStats(container, rows) {
-  if (!container) {
-    return;
-  }
-  container.innerHTML = "";
-  if (!rows.length) {
-    container.innerHTML = `<p class="empty-state">${escapeHtml(t("noAttackerIps"))}</p>`;
-    return;
-  }
-  for (const row of rows.slice(0, 5)) {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "attacker-ip-row";
-    const severityMix = Array.from(row.severities, ([severity, count]) => `${severity}:${count}`).join(", ");
-    item.innerHTML = `
-      <strong>${escapeHtml(row.source)} (${escapeHtml(String(row.count))})</strong>
-      <span>${escapeHtml(severityMix || "unknown")}</span>
-      <span>${escapeHtml(Array.from(row.rules).slice(0, 3).join(", ") || "no rules")}</span>
-      <span>${escapeHtml(topMapValue(row.targets))} | ${escapeHtml(topMapValue(row.actors))}</span>
-      <span>${escapeHtml(row.first)} -> ${escapeHtml(row.last)}</span>
-    `;
-    item.addEventListener("click", () => {
-      state.filters.source = row.source;
-      sourceFilter.value = row.source;
-      state.findingPage = 1;
-      renderFindings(state.findings);
-    });
-    container.append(item);
-  }
 }
 
 function renderSelectedAlert(finding, index) {
@@ -690,25 +523,24 @@ function renderCharts(payload) {
   const findings = payload.findings || [];
   const summary = payload.summary || {};
   const insights = payload.insights || {};
-  const sourceRows = chartSourceDistribution(findings);
-  const timeRows = chartTimeDistribution(findings, insights);
-  const severityRows = chartSeverityDistribution(summary, findings);
+  const datasets = buildChartDatasets(payload);
+  const sourceRows = datasets.sourceIps.length ? datasets.sourceIps : chartSourceDistribution(findings);
+  const timeRows = datasets.timeBuckets.length ? datasets.timeBuckets : chartTimeDistribution(findings, insights);
+  const severityRows = datasets.severities;
   const attackerRows = aggregateAttackerIps(findings);
 
-  const renderedChartCount = [charts.source, charts.time, charts.severity, charts.attackerIps].filter(Boolean).length;
-  chartCount.textContent = findings.length ? `${renderedChartCount} charts` : "0 charts";
-  renderBarChart(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
-  renderBarChart(charts.time, timeRows, { empty: t("noTimeData") });
-  renderBarChart(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  chartCount.textContent = findings.length ? "6 charts" : "0 charts";
+  renderChartFallbackTable(charts.source, sourceRows, { empty: "No source/entity findings to chart." });
+  renderChartFallbackTable(charts.time, timeRows, { empty: t("noTimeData") });
+  renderChartFallbackTable(charts.severity, severityRows, { empty: "No severity findings to chart." });
+  renderChartFallbackTable(charts.rule, datasets.rules, { empty: "No rule findings to chart." });
+  renderChartFallbackTable(charts.sourceFile, datasets.sourceFiles, { empty: "No source contribution data to chart." });
   renderAttackerIpStats(charts.attackerIps, attackerRows);
 }
 
 function resetCharts() {
   chartCount.textContent = "0 charts";
   for (const container of Object.values(charts)) {
-    if (!container) {
-      continue;
-    }
     container.innerHTML = `<p class="empty-state">${escapeHtml(t("runCharts"))}</p>`;
   }
 }
@@ -735,6 +567,115 @@ function chartTimeDistribution(findings, insights) {
   return sortedChartRows(counts, false).slice(0, 6);
 }
 
+function buildChartDatasets(payload) {
+  const findings = payload.findings || [];
+  const summary = payload.summary || {};
+  return {
+    sourceIps: buildSourceIpRows(findings),
+    timeBuckets: buildTimeBucketRows(findings),
+    severities: chartSeverityDistribution(summary, findings),
+    rules: buildRuleRows(findings),
+    sourceFiles: buildSourceFileRows(findings),
+  };
+}
+
+function buildSourceIpRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const source = finding.source_address || "unknown";
+    counts.set(source, (counts.get(source) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
+}
+
+function buildTimeBucketRows(findings) {
+  const counts = new Map();
+  let unknown = 0;
+  for (const finding of findings) {
+    if (!finding.timestamp) {
+      unknown += 1;
+      continue;
+    }
+    const timestamp = String(finding.timestamp);
+    const bucket = timestamp.length >= 13 ? `${timestamp.slice(0, 13)}:00` : timestamp;
+    counts.set(bucket, (counts.get(bucket) || 0) + 1);
+  }
+  const rows = sortedChartRows(counts, false).slice(0, CHART_LIMIT);
+  if (unknown) {
+    rows.push({ label: "Unknown time", value: unknown });
+  }
+  return rows;
+}
+
+function buildRuleRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const rule = finding.rule_id || "unknown";
+    counts.set(rule, (counts.get(rule) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
+}
+
+function buildSourceFileRows(findings) {
+  const counts = new Map();
+  for (const finding of findings) {
+    const source = finding.source_file || "unknown";
+    counts.set(source, (counts.get(source) || 0) + 1);
+  }
+  return sortedChartRows(counts).slice(0, CHART_LIMIT);
+}
+
+function aggregateAttackerIps(findings) {
+  const rows = new Map();
+  findings.forEach((finding, index) => {
+    if (!finding.source_address) {
+      return;
+    }
+    const key = finding.source_address;
+    if (!rows.has(key)) {
+      rows.set(key, {
+        source: key,
+        count: 0,
+        severities: new Map(),
+        rules: new Set(),
+        actors: new Map(),
+        targets: new Map(),
+        first: finding.timestamp || sourceReference(finding),
+        last: finding.timestamp || sourceReference(finding),
+        representativeIndex: index,
+      });
+    }
+    const row = rows.get(key);
+    const severity = finding.severity || "unknown";
+    row.count += 1;
+    row.severities.set(severity, (row.severities.get(severity) || 0) + 1);
+    if (finding.rule_id) {
+      row.rules.add(finding.rule_id);
+    }
+    if (finding.actor) {
+      row.actors.set(finding.actor, (row.actors.get(finding.actor) || 0) + 1);
+    }
+    if (finding.target) {
+      row.targets.set(finding.target, (row.targets.get(finding.target) || 0) + 1);
+    }
+    row.last = finding.timestamp || sourceReference(finding);
+  });
+  return Array.from(rows.values()).sort((left, right) => right.count - left.count || left.source.localeCompare(right.source));
+}
+
+function sourceReference(finding) {
+  if (finding.source_file && finding.line_number) {
+    return `${finding.source_file}:${finding.line_number}`;
+  }
+  return finding.source_file || "local evidence";
+}
+
+function topMapValue(values) {
+  const rows = Array.from(values, ([label, count]) => ({ label, count }));
+  rows.sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+  return rows.length ? rows[0].label : "n/a";
+}
+
 function chartSeverityDistribution(summary, findings) {
   const severityCounts = summary.findings_by_severity || {};
   const fallback = findings.reduce((counts, finding) => {
@@ -758,6 +699,34 @@ function sortedChartRows(counts, byValue = true) {
   });
 }
 
+function renderAttackerIpStats(container, rows) {
+  container.innerHTML = "";
+  if (!rows.length) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(t("noAttackerIps"))}</p>`;
+    return;
+  }
+  for (const row of rows.slice(0, 5)) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "attacker-ip-row";
+    const severityMix = Array.from(row.severities, ([severity, count]) => `${severity}:${count}`).join(", ");
+    item.innerHTML = `
+      <strong>${escapeHtml(row.source)} (${escapeHtml(String(row.count))})</strong>
+      <span>${escapeHtml(severityMix || "unknown")}</span>
+      <span>${escapeHtml(Array.from(row.rules).slice(0, 3).join(", ") || "no rules")}</span>
+      <span>${escapeHtml(topMapValue(row.targets))} | ${escapeHtml(topMapValue(row.actors))}</span>
+      <span>${escapeHtml(row.first)} -> ${escapeHtml(row.last)}</span>
+    `;
+    item.addEventListener("click", () => {
+      state.filters.source = row.source;
+      sourceFilter.value = row.source;
+      state.findingPage = 1;
+      renderFindings(state.findings);
+    });
+    container.append(item);
+  }
+}
+
 function renderBarChart(container, rows, options) {
   container.innerHTML = "";
   if (!rows.length) {
@@ -778,6 +747,17 @@ function renderBarChart(container, rows, options) {
     `;
     container.append(item);
   }
+}
+
+function renderChartFallbackTable(container, rows, options = {}) {
+  if (!rows.length) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(options.empty || "No chart data available.")}</p>`;
+    return;
+  }
+  const tableRows = rows
+    .map((row) => `<tr><th scope="row">${escapeHtml(row.label)}</th><td>${escapeHtml(String(row.value))}</td></tr>`)
+    .join("");
+  container.innerHTML = `<table class="chart-fallback"><tbody>${tableRows}</tbody></table>`;
 }
 
 function escapeHtml(value) {

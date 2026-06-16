@@ -15,6 +15,7 @@ class Event:
     target: str | None = None
     source_address: str | None = None
     message: str | None = None
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.message is None:

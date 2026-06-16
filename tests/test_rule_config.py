@@ -26,9 +26,11 @@ text_contains = ["needle"]
 score = 15
 """)
             config = load_rules(path)
-            self.assertEqual(len(config.indicator_rules), 1)
-            rule = config.indicator_rules[0]
-            self.assertEqual(rule.id, "test_indicator")
+            # load_rules() merges with defaults, so we check at least the user rule is present
+            self.assertGreaterEqual(len(config.indicator_rules), 1)
+            rule_ids = [r.id for r in config.indicator_rules]
+            self.assertIn("test_indicator", rule_ids)
+            rule = next(r for r in config.indicator_rules if r.id == "test_indicator")
             self.assertEqual(rule.score, 15)
             self.assertEqual(rule.text_contains, ["needle"])
 
@@ -53,9 +55,11 @@ multiplier = 1.5
 score = 30
 """)
             config = load_rules(path)
-            self.assertEqual(len(config.pattern_rules), 1)
-            rule = config.pattern_rules[0]
-            self.assertEqual(rule.id, "test_pattern")
+            # load_rules() merges with defaults, so check user pattern is present
+            self.assertGreaterEqual(len(config.pattern_rules), 1)
+            pattern_ids = [r.id for r in config.pattern_rules]
+            self.assertIn("test_pattern", pattern_ids)
+            rule = next(r for r in config.pattern_rules if r.id == "test_pattern")
             self.assertEqual(rule.require_indicators, ["ind_a"])
             self.assertEqual(rule.multiplier, 1.5)
 
@@ -159,5 +163,8 @@ enabled = false
                 "correlation_rules": []
             }), encoding="utf-8")
             config = load_rules(path)
-            self.assertEqual(len(config.indicator_rules), 1)
+            # Merged with defaults — check user rule is present
+            self.assertGreaterEqual(len(config.indicator_rules), 1)
+            rule_ids = [r.id for r in config.indicator_rules]
+            self.assertIn("json_rule", rule_ids)
             self.assertEqual(config.severity_thresholds["medium"], 25)

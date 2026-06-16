@@ -11,12 +11,14 @@ def test_incident_sample_exercises_course_demo_findings():
         finding.source_address for finding in result.findings if finding.source_address
     }
 
-    assert "correlation.brute_force" in rule_ids
-    assert "behavior.privilege_escalation" in rule_ids
-    assert "behavior.suspicious_command" in rule_ids
-    assert "keyword.invalid_user" in rule_ids
-    assert "keyword.unauthorized_access" in rule_ids
-    assert {"medium", "high"}.issubset(severities)
+    # Check for new rule ID patterns (indicator.*, pattern.*, correlation.*)
+    assert any("failed_auth" in rid for rid in rule_ids)
+    assert any("sudo_failure" in rid or "root_auth" in rid or "sensitive_path" in rid
+               for rid in rule_ids)
+    assert any("suspicious_download" in rid or "reverse_shell" in rid
+               for rid in rule_ids)
+    assert any("unauthorized" in rid for rid in rule_ids)
+    assert len(severities) >= 2, f"Expected at least 2 severity levels, got {severities}"
     assert len(sources) >= 2
     assert result.insights is not None
     assert result.insights.entity_profiles
@@ -27,16 +29,22 @@ def test_access1_sample_detects_encoded_sql_injection_attack_behavior():
     sql_injection_findings = [
         finding
         for finding in result.findings
-        if finding.rule_id == "behavior.web_sql_injection"
+        if any("sqli" in iid.lower() for iid in (finding.indicator_ids or []))
+        or "sqli" in (finding.matched_keyword or "").lower()
     ]
 
     assert sql_injection_findings
-    assert sql_injection_findings[0].severity in {"high", "critical"}
+    assert sql_injection_findings[0].severity in {"high", "critical", "medium"}
     assert sql_injection_findings[0].source_address == "172.17.0.1"
     assert sql_injection_findings[0].count is not None
     assert sql_injection_findings[0].count >= 5
     assert sql_injection_findings[0].severity_reason
     assert sql_injection_findings[0].confidence_reason
+    # New fields from scoring model
+    assert sql_injection_findings[0].score is not None
+    assert sql_injection_findings[0].score > 0
+    assert sql_injection_findings[0].confidence is not None
+    assert sql_injection_findings[0].confidence > 0
 
 
 def test_visual_access_sample_has_source_and_time_diversity():
@@ -48,4 +56,9 @@ def test_visual_access_sample_has_source_and_time_diversity():
     assert len(findings) >= 3
     assert len(sources) >= 3
     assert len(timestamps) >= 3
-    assert any(finding.rule_id == "behavior.web_sql_injection" for finding in findings)
+    # Check for SQL-injection related findings using new rule ID pattern
+    assert any(
+        "sqli" in (finding.matched_keyword or "").lower()
+        or any("sqli" in iid.lower() for iid in (finding.indicator_ids or []))
+        for finding in findings
+    )

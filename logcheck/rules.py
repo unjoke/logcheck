@@ -238,6 +238,7 @@ def _event_to_finding(
         actor=event.actor,
         target=event.target,
         matched_keyword=match.matched_keyword,
+        severity_reason=f"Score {score}/100 from indicator '{match.rule_id}'",
         confidence_reason=f"Single indicator match ({match.rule_id})",
     )
 

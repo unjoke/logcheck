@@ -147,6 +147,70 @@ node --check logcheck/web_static/app.js
 - Web API 健康检查、样例日志、上传分析和导出
 - Web 前端静态资源与本地安全边界
 
+## 规则配置 (Rule Configuration)
+
+Logcheck 使用纯配置驱动的三层评分引擎。默认规则位于 `logcheck/default_rules.toml`，
+可通过 `--rules` 参数指定自定义规则文件。
+
+### 评分模型
+
+每条规则产生 0-100 的分数，最终严重级别由分数和置信度共同决定：
+
+| 分数范围 | 严重级别 | 说明 |
+|---------|---------|------|
+| 0-19 | low | 信息性，基本可忽略 |
+| 20-49 | medium | 可疑，需要关注 |
+| 50-79 | high | 规则精准匹配，确认的攻击 |
+| 80-100 | critical | 存在争议，需人工判断 |
+
+**关键区分**：当分数达到 high 范围但置信度较低时，会自动升级为 critical——
+这意味着"有攻击迹象但不够确定，需要人来拍板"。
+
+### 置信度计算
+
+置信度由指标多样性驱动：`15 × distinct_indicators + evidence_bonus`
+
+- 1 个 indicator 命中 → 15-25%（低置信度）
+- 2 个 indicator 命中 → 30-45%（中等）
+- 3+ 个 indicator 命中 + 解码证据 → 45-75%（高置信度）
+
+### 自定义规则
+
+创建 `my-rules.toml`：
+
+```toml
+[severity_thresholds]
+low = 0
+medium = 25
+high = 55
+critical = 85
+
+[[indicator_rules]]
+id = "my_custom_rule"
+category = "custom"
+description = "检测自定义模式"
+weight = 2
+text_contains = ["可疑关键字"]
+score = 20
+
+# 禁用默认规则
+[[indicator_rules]]
+id = "scanner_probe"
+enabled = false
+```
+
+使用：`logcheck analyze logs/ --rules my-rules.toml`
+
+规则文件支持 TOML（默认）、JSON 和 YAML 格式。用户规则与默认规则合并，相同 ID 的用户规则会覆盖默认值。
+
+### 规则层级
+
+| 层级 | 说明 | 示例 |
+|------|------|------|
+| indicator | 单事件匹配 | 关键字命中、正则匹配 |
+| pattern | 多事件行为模式 | 暴力破解、SQL 盲注枚举 |
+| correlation | 跨实体关联 | 同源多类别攻击、公网 IP 聚类 |
+
 ## 项目结构
 
 ```text

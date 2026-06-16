@@ -13,7 +13,7 @@ logcheck-web = "logcheck.webapp:main"
 packages = ["logcheck"]
 
 [tool.setuptools.package-data]
-logcheck = ["web_static/*"]
+logcheck = ["web_static/*", "default_rules.toml"]
 
 [build-system]
 requires = ["setuptools>=68"]
